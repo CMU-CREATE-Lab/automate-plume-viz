@@ -1,2 +1,3 @@
 *.ipynb.sage-jupyter2
 *.DS_Store
+data/rgb/
