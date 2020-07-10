@@ -3,3 +3,4 @@
 data/rgb/
 *.html
 *.term
+*.pyc
