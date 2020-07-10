@@ -117,7 +117,8 @@ def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_
 #   sources: location of the sources of pollution, in an array of DispersionSource objects
 #   emit_time_hrs: affects the emission time for running each Hysplit model
 #   duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
-def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24):
+#   filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
+def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8):
     print("="*100)
     print("="*100)
     print("start_time_eastern: %s" % start_time_eastern)
@@ -164,20 +165,13 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24):
         [[250, 255, 99],[99, 255, 206],[206, 92, 247],[255, 119, 0]]
     ]
     print("Creating %s" % o_file)
-    create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration)
+    create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_ratio=filter_ratio)
     print("Created %s" % o_file)
     os.chmod(o_file, 0o777)
 
 
 # The parallel worker for simulation
-def simulate_worker(start_time_eastern, o_file):
-    # Location of the sources of pollution
-    sources = [
-        DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
-        DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
-        DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
-        DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
-
+def simulate_worker(start_time_eastern, o_file, sources):
     # Skip if the file exists
     if os.path.isfile(o_file):
         print("File already exists %s" % o_file)
@@ -185,7 +179,7 @@ def simulate_worker(start_time_eastern, o_file):
 
     # HYSPLIT Simulation
     try:
-        simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24)
+        simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8)
         return True
     except Exception as ex:
         print("\t{%s} %s\n" % (ex, o_file))
@@ -412,6 +406,14 @@ def genetate_earthtime_data():
 def run_hysplit(start_d, file_name):
     print("Run Hysplit model...")
 
+    # Location of the sources of pollution
+    sources = [
+        DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
+        DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
+        DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
+        DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+    sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50)]
+
     # Prepare the list of dates for running the simulation
     start_time_eastern_all = start_d.strftime("%Y-%m-%d %H:%M").values
     o_file_all = o_root + file_name.values + ".bin"
@@ -419,9 +421,9 @@ def run_hysplit(start_d, file_name):
     # Run the simulation for each date in parallel (be aware of the memory usage)
     arg_list = []
     for i in range(len(o_file_all)):
-        arg_list.append((start_time_eastern_all[i], o_file_all[i]))
+        arg_list.append((start_time_eastern_all[i], o_file_all[i], sources))
     #result = Pool(3).starmap(simulate_worker, arg_list)
-    simulate_worker(start_time_eastern_all[1], o_file_all[1])
+    simulate_worker(start_time_eastern_all[0], o_file_all[0], sources)
 
 
 def download_video_frames(df_share_url, df_img_url):
@@ -456,12 +458,15 @@ def create_all_videos():
 
 # The main function
 def main():
+    program_start_time = time.time()
     load_utility()
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
     run_hysplit(start_d, file_name)
-    download_video_frames(df_share_url, df_img_url)
-    rename_video_frames()
-    create_all_videos()
+    #download_video_frames(df_share_url, df_img_url)
+    #rename_video_frames()
+    #create_all_videos()
+    program_run_time = (time.time()-program_start_time)/60
+    print("Took %.2f minutes to run the program" % program_run_time)
 
 
 if __name__ == "__main__":

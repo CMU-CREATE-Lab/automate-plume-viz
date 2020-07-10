@@ -2,7 +2,7 @@
 This is the utility function for automating plume visualization
 Developed by Amy, Randy, and edited by Yen-Chia
 """
-import glob, os
+import glob, os, array, datetime, math, random
 import numpy as np
 
 
@@ -33,16 +33,14 @@ def findInFolder(folder, pattern):
         return False
 
 
-def parse_pardump(fname):
-    n_lines = sum(1 for i in open(fname, "rb"))
-    # Knowing the number of lines can speed up the process
-    # using the append method is slow
-    lines = [None]*n_lines
-    with open(fname, "rb") as f:
-        i = 0
+def parse_pardump(fname, rgb, filter_ratio=0.8, with_size=False):
+    # Process lines in the file
+    print("Process lines...")
+    points = {}
+    with open(fname, "r") as f:
         for line in f:
             try:
-                cooked_line = []
+                L = []
                 raw_line = line.rstrip().split(" ")
                 for l in raw_line:
                     if l.rstrip() != '':
@@ -50,12 +48,47 @@ def parse_pardump(fname):
                             l = float(l)
                         else:
                             l = int(l)
-                        cooked_line.append(l)
-                lines[i] = cooked_line
+                        L.append(l)
             except:
-                lines[i] = line
-            i += 1
-    return lines
+                L = line
+            if len(L) == 7:
+                minute = L[6]
+                dt = datetime.datetime(2000 + L[2], L[3], L[4], L[5], L[6])
+                epoch = datetime_to_epoch(dt)
+            elif len(L) == 6:
+                x, y = lonlat_to_pixel_xy((L[1], L[0]))
+                z = float(L[2])
+                if with_size:
+                    sigh = sigh_to_pixel(float(l[3]), l[0])
+            elif len(L) == 5:
+                # This is where we can find the points
+                if random.random() > filter_ratio:
+                    idx = L[4]
+                    if idx not in points:
+                        points[idx] = []
+                    if minute % 5 == 0:
+                        if with_size:
+                            points[idx].append([x, y, z, epoch, sigh])
+                        else:
+                            points[idx].append([x, y, z, epoch])
+    # Process points
+    print("Process %d points obtained from the file" % len(points))
+    c = pack_color(rgb)
+    data = []
+    for idx in points:
+        p = points[idx]
+        if len(p) > 1:
+            for i in range(0, len(p) - 1):
+                p0 = p[i]
+                p1 = p[i+1]
+                # Each shader record in float32 is:
+                # x0, y0, z0, epoch0, x1, y1, z1, epoch1, packedColor
+                # x and y are in web mercator space 0,0 is NW 255,255 is SE
+                if with_size:
+                    data += [p0[0], p0[1], p0[2], p0[3], p1[0], p1[1], p1[2], p1[3], c, p1[4]]
+                else:
+                    data += [p0[0], p0[1], p0[2], p0[3], p1[0], p1[1], p1[2], p1[3], c]
+    return data
 
 
 def pack_color(color):
@@ -81,73 +114,6 @@ def scale_particle(sigh):
     return ((sigh + 1.0) / 12600.0) + 1.0 #offset by 1 to make sure all points draw
 
 
-# flow points, assumes time is every minute
-# Output points format is:
-def get_points(lines, rgb, filtered=0.0):
-    points = {}
-    c = pack_color(rgb)
-    for l in lines:
-        if len(l) == 7:
-            minute = l[6]
-            dt = datetime.datetime(2000 + l[2],l[3],l[4],l[5],l[6])
-            epoch = datetime_to_epoch(dt)
-        if len(l) == 6:
-            x,y = lonlat_to_pixel_xy((l[1],l[0]))
-            z = float(l[2])
-        if len(l) == 5:
-            idx = l[4]
-            if idx not in points:
-                points[idx] = []
-            if minute % 5 == 0:
-                points[idx].append([x,y,z,epoch])
-    data = []
-    for idx in points:
-        if random.random() > filtered:
-            p = points[idx]
-            if len(p) > 1:
-                for i in range(0,len(p) - 1):
-                    p0 = p[i]
-                    p1 = p[i+1]
-                    # Each shader record in float32 is:
-                    # x0, y0, z0, epoch0, x1, y1, z1, epoch1, packedColor
-                    # x and y are in web mercator space 0,0 is NW 255,255 is SE
-                    data += [p0[0],p0[1], p0[2], p0[3], p1[0],p1[1], p1[2], p1[3], c]
-    return data
-
-
-def get_points_with_size(lines, rgb, filtered=0.0):
-    points = {}
-    c = pack_color(rgb)
-    for l in lines:
-        if len(l) == 7:
-            minute = l[6]
-            dt = datetime.datetime(2000 + l[2],l[3],l[4],l[5],l[6])
-            epoch = datetime_to_epoch(dt)
-        if len(l) == 6:
-            x,y = lonlat_to_pixel_xy((l[1],l[0]))
-            z = float(l[2])
-            sigh = sigh_to_pixel(float(l[3]),l[0])
-        if len(l) == 5:
-            idx = l[4]
-            if idx not in points:
-                points[idx] = []
-            if minute % 5 == 0:
-                points[idx].append([x,y,z,epoch,sigh])
-    data = []
-    for idx in points:
-        if random.random() > filtered:
-            p = points[idx]
-            if len(p) > 1:
-                for i in range(0,len(p) - 1):
-                    p0 = p[i]
-                    p1 = p[i+1]
-                    # Each shader record in float32 is:
-                    # x0, y0, z0, epoch0, x1, y1, z1, epoch1, packedColor
-                    # x and y are in web mercator space 0,0 is NW 255,255 is SE
-                    data += [p0[0],p0[1], p0[2], p0[3], p1[0],p1[1], p1[2], p1[3], c, p1[4]]
-    return data
-
-
 # coloring based on hour
 def create_bin(fnames, o_file):
     i = 0
@@ -165,28 +131,21 @@ def create_bin(fnames, o_file):
 
 
 # coloring based on source
-def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duration):
-    if with_size: # if you're visualizing puffs instead of particles
-        pointGetter = get_points_with_size
-        attrs = 10
-    else:
-        pointGetter = get_points
-        attrs = 9
-    points = np.array([])
+# filter_ratio=0.8 means that 80% of the points will be dropped
+# with_size=True means visualizing puffs instead of particles
+def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duration, filter_ratio=0.8):
     runTimeHrs = len(fnames) / numSources
-    # Randomly filter out points proportional to number of sources to improve loading speed
-    filteredPoints = (1 - 1.0 / numSources) * (1.0 / (duration / 8.0))
-    for i,fname in enumerate(fnames):
+    print("Only use %.2f of all the points to reduce file size" % (1-filter_ratio))
+    all_points = []
+    for i, fname in enumerate(fnames):
         src = i / runTimeHrs
         rgb = cmaps[numSources - 1][int(src)]
-        print("Read lines in %s" % fname)
-        lines = parse_pardump(fname)
-        # Use pointGetter
-        print("Get points from %d lines..." % len(lines))
-        points = np.append(points, pointGetter(lines, rgb, filteredPoints))
-        lines = []
-    points = points.reshape((-1,attrs))
+        all_points.append(parse_pardump(fname, rgb, filter_ratio=filter_ratio, with_size=with_size))
+        print("Points array has length %d" % len(all_points[i]))
+    points = np.concatenate(all_points)
+    attrs = 10 if with_size else 9
+    points = points.reshape((-1, attrs))
     np.random.shuffle(points)
-    points = points.reshape((-1,1))
+    points = points.reshape((-1, 1))
     print("Writing array to file %s" % o_file)
     array.array('f', points).tofile(open(o_file, 'wb'))
