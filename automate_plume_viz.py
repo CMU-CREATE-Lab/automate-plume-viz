@@ -412,7 +412,6 @@ def run_hysplit(start_d, file_name):
         DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
         DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
         DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
-    sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50)]
 
     # Prepare the list of dates for running the simulation
     start_time_eastern_all = start_d.strftime("%Y-%m-%d %H:%M").values
