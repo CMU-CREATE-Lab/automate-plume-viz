@@ -420,10 +420,11 @@ def run_hysplit(start_d, file_name):
 
     # Run the simulation for each date in parallel (be aware of the memory usage)
     arg_list = []
-    for i in range(len(o_file_all)):
+    #for i in range(len(o_file_all)):
+    for i in range(5):
         arg_list.append((start_time_eastern_all[i], o_file_all[i], sources))
-    #result = Pool(3).starmap(simulate_worker, arg_list)
-    simulate_worker(start_time_eastern_all[0], o_file_all[0], sources)
+    result = Pool(3).starmap(simulate_worker, arg_list)
+    #simulate_worker(start_time_eastern_all[0], o_file_all[0], sources)
 
 
 def download_video_frames(df_share_url, df_img_url):
@@ -462,9 +463,9 @@ def main():
     load_utility()
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
     run_hysplit(start_d, file_name)
-    #download_video_frames(df_share_url, df_img_url)
-    #rename_video_frames()
-    #create_all_videos()
+    download_video_frames(df_share_url, df_img_url)
+    rename_video_frames()
+    create_all_videos()
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
 
