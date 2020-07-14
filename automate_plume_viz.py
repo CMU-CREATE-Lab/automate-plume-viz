@@ -51,7 +51,8 @@ def exec_ipynb(filename_or_url):
 #   df_img_url: the pandas dataframe for the thumbnail server urls to get images of video frames
 #   start_d: a pandas series of the starting datetime object in EST time
 #   file_name: a list of file names
-def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=360):
+#   redo: this is a number to force the server to avoid using the cached file
+def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=360, redo=1):
     # Create rows in the EarthTime layer document
     offset_d = pd.Timedelta(offset_hours, unit="h")
     start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
@@ -71,7 +72,7 @@ def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_
     et_root_url = "https://davos2019.earthtime.org/explore#"
     et_part = "v=581806,708156,584252,710601,pts&ps=2400&startDwell=0&endDwell=0"
     ts_root_url = "https://thumbnails-earthtime.cmucreatelab.org/thumbnail?"
-    ts_part = "&width=%d&height=%d&format=zip&fps=30&tileFormat=mp4&startDwell=0&endDwell=0&fromScreenshot&disableUI" % (img_size, img_size)
+    ts_part = "&width=%d&height=%d&format=zip&fps=30&tileFormat=mp4&startDwell=0&endDwell=0&fromScreenshot&disableUI&redo=%d" % (img_size, img_size, redo)
     share_url_ls = [] # EarthTime share urls
     dt_share_url_ls = [] # the date of the share urls
     img_url_ls = [] # thumbnail server urls
@@ -351,7 +352,7 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30):
         time_list.append(int(fn.split(".")[0]))
     time_list = sorted(time_list)
     width, height = Image.open(in_dir_p + "%d.png" % time_list[0]).size
-    fourcc = cv.VideoWriter_fourcc(*"mp4v")
+    fourcc = cv.VideoWriter_fourcc(*"avc1")
     video = cv.VideoWriter(out_file_p, fourcc, fps, (width, height))
     for t in time_list:
         img = Image.open(in_dir_p + "%d.png" % t)
@@ -419,8 +420,7 @@ def run_hysplit(start_d, file_name):
 
     # Run the simulation for each date in parallel (be aware of the memory usage)
     arg_list = []
-    #for i in range(len(o_file_all)):
-    for i in range(5):
+    for i in range(len(o_file_all)):
         arg_list.append((start_time_eastern_all[i], o_file_all[i], sources))
     result = Pool(3).starmap(simulate_worker, arg_list)
     #simulate_worker(start_time_eastern_all[0], o_file_all[0], sources)
@@ -459,12 +459,15 @@ def create_all_videos():
 # The main function
 def main():
     program_start_time = time.time()
+
     load_utility()
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
     run_hysplit(start_d, file_name)
-    download_video_frames(df_share_url, df_img_url)
-    rename_video_frames()
-    create_all_videos()
+
+    #download_video_frames(df_share_url, df_img_url)
+    #rename_video_frames()
+    #create_all_videos()
+
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
 

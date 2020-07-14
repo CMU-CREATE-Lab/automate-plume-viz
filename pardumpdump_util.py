@@ -137,6 +137,7 @@ def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duratio
     runTimeHrs = len(fnames) / numSources
     print("Only use %.2f of all the points to reduce file size" % (1-filter_ratio))
     all_points = []
+    # TODO: make this loop parallel (using Pool)
     for i, fname in enumerate(fnames):
         src = i / runTimeHrs
         rgb = cmaps[numSources - 1][int(src)]
