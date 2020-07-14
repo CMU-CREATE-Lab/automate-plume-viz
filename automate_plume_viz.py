@@ -52,7 +52,7 @@ def exec_ipynb(filename_or_url):
 #   start_d: a pandas series of the starting datetime object in EST time
 #   file_name: a list of file names
 #   redo: this is a number to force the server to avoid using the cached file
-def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=540, redo=0):
+def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=540, redo=1):
     # Create rows in the EarthTime layer document
     offset_d = pd.Timedelta(offset_hours, unit="h")
     start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
