@@ -89,7 +89,7 @@ def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_
         date_str = sdt_str[:8]
         bt = "bt=" + sdt_str + "&"
         et = "et=" + edt_str + "&"
-        l = "l=bdrk,smell_my_city_pgh_reports,plume_" + date_str + "&"
+        l = "l=bdrk_detailed,smell_my_city_pgh_reports_top,plume_" + date_str + "&"
         share_url_ls.append(et_root_url + l + bt + et + et_part)
         dt_share_url_ls.append(date_str)
         # Add the thumbnail server url
@@ -194,7 +194,7 @@ def simulate_worker(start_time_eastern, o_file, sources):
 #   dir_p: the folder path for saving the files
 #   num_try: the number of times that the function has been called
 #   num_workers: the number of workers to download the frames
-def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=4):
+def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
     print("="*100)
     print("="*100)
     print("This function has been called for %d times." % num_try)
@@ -342,28 +342,37 @@ def get_all_dir_names_in_folder(path):
 # Add caption to the images by its file name (epochtime)
 # Then merge these images into a video
 # Input:
-#    in_dir_p: path to the folder that contains video frames
-#    out_file_p: the path to the file that will store the video
-#    font_p: the path to the font file for the caption
-def create_video(in_dir_p, out_file_p, font_p, fps=30):
+#   in_dir_p: path to the folder that contains video frames
+#   out_file_p: the path to the file that will store the video
+#   font_p: the path to the font file for the caption
+#   reduce_size: if True, will reduce file size using ffmpeg
+def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=True):
     print("Process images in %r" % in_dir_p)
+    out_file_p_tmp = out_file_p + ".mp4"
     time_list = []
     for fn in get_all_file_names_in_folder(in_dir_p):
         time_list.append(int(fn.split(".")[0]))
     time_list = sorted(time_list)
     width, height = Image.open(in_dir_p + "%d.png" % time_list[0]).size
     fourcc = cv.VideoWriter_fourcc(*"avc1")
-    video = cv.VideoWriter(out_file_p, fourcc, fps, (width, height))
+    video = cv.VideoWriter(out_file_p_tmp, fourcc, fps, (width, height))
     for t in time_list:
         img = Image.open(in_dir_p + "%d.png" % t)
         draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype(font_p, 26)
+        font = ImageFont.truetype(font_p, 40)
         dt = datetime.datetime.fromtimestamp(t).astimezone(pytz.timezone("US/Eastern"))
         caption = dt.strftime("%Y-%m-%d %H:%M:%S")
-        draw.text((20, height - 50), caption, (0,255,255), font=font)
+        draw.text((10, height - 55), caption, (0,255,255), font=font)
         video.write(cv.cvtColor(np.array(img), cv.COLOR_RGB2BGR))
     cv.destroyAllWindows()
     video.release()
+    if reduce_size:
+        print("Reducing file size...")
+        subprocess.call("ffmpeg -i %s -vf scale=360:360 -b:v 1200k -bufsize 1200k -y %s" % (out_file_p_tmp, out_file_p),
+                shell=True)
+        os.remove(out_file_p_tmp)
+    else:
+        os.rename(out_file_p_tmp, out_file_p)
     os.chmod(out_file_p, 0o777)
     print("DONE saving video to %r" % out_file_p)
 
@@ -464,7 +473,6 @@ def main():
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
 
     #run_hysplit(start_d, file_name)
-
     download_video_frames(df_share_url, df_img_url)
     rename_video_frames()
     create_all_videos()
