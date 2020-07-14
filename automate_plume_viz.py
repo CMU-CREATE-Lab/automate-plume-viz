@@ -52,7 +52,7 @@ def exec_ipynb(filename_or_url):
 #   start_d: a pandas series of the starting datetime object in EST time
 #   file_name: a list of file names
 #   redo: this is a number to force the server to avoid using the cached file
-def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=360, redo=0):
+def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=540, redo=0):
     # Create rows in the EarthTime layer document
     offset_d = pd.Timedelta(offset_hours, unit="h")
     start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
@@ -194,7 +194,7 @@ def simulate_worker(start_time_eastern, o_file, sources):
 #   dir_p: the folder path for saving the files
 #   num_try: the number of times that the function has been called
 #   num_workers: the number of workers to download the frames
-def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
+def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=4):
     print("="*100)
     print("="*100)
     print("This function has been called for %d times." % num_try)
@@ -204,13 +204,15 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
     num_errors = 0
     arg_list = []
     # Construct the lists of urls and file paths
+    count = 0
     for dt, df in df_img_url.groupby("date"):
         img_url_list = list(df["img_url"])
         dir_p_dt = dir_p + dt + "/"
         check_and_create_dir(dir_p) # need this line to set the permission
         check_and_create_dir(dir_p_dt)
-        for i in range(n):
-            arg_list.append((img_url_list[i], dir_p_dt + str(i) + ".zip", i))
+        for i in range(len(img_url_list)):
+            count += 1
+            arg_list.append((img_url_list[i], dir_p_dt + str(i) + ".zip", count))
     # Download the files in parallel
     result = Pool(num_workers).starmap(urlretrieve_worker, arg_list)
     for r in result:
@@ -463,9 +465,9 @@ def main():
 
     #run_hysplit(start_d, file_name)
 
-    #download_video_frames(df_share_url, df_img_url)
-    #rename_video_frames()
-    #create_all_videos()
+    download_video_frames(df_share_url, df_img_url)
+    rename_video_frames()
+    create_all_videos()
 
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
