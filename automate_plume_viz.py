@@ -204,15 +204,13 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
     num_errors = 0
     arg_list = []
     # Construct the lists of urls and file paths
-    count = 0
     for dt, df in df_img_url.groupby("date"):
         img_url_list = list(df["img_url"])
         dir_p_dt = dir_p + dt + "/"
         check_and_create_dir(dir_p) # need this line to set the permission
         check_and_create_dir(dir_p_dt)
         for i in range(len(img_url_list)):
-            count += 1
-            arg_list.append((img_url_list[i], dir_p_dt + str(i) + ".zip", count))
+            arg_list.append((img_url_list[i], dir_p_dt + str(i) + ".zip"))
     # Download the files in parallel
     result = Pool(num_workers).starmap(urlretrieve_worker, arg_list)
     for r in result:
@@ -231,8 +229,8 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
 #   url: the url for getting the frames
 #   file_p: the path for saving the file
 #   idx: the index of the worker
-def urlretrieve_worker(url, file_p, idx):
-    time.sleep(idx) # sleep to prevent calling the server too fast
+def urlretrieve_worker(url, file_p):
+    time.sleep(1) # sleep to prevent calling the server too fast
     error = False
     if os.path.isfile(file_p): # skip if the file exists
         print("\t{File exists} %s\n" % file_p)
