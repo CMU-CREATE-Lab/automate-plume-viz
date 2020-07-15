@@ -472,7 +472,7 @@ def main():
     load_utility()
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
 
-    #run_hysplit(start_d, file_name)
+    run_hysplit(start_d, file_name)
     download_video_frames(df_share_url, df_img_url)
     rename_video_frames()
     create_all_videos()
