@@ -460,6 +460,8 @@ def create_all_videos():
     font_p = "data/font/OpenSans-Regular.ttf"
     for dn in get_all_dir_names_in_folder("data/rgb/"):
         in_dir_p = "data/rgb/" + dn + "/"
+        video_path = in_dir_p + dn + ".mp4"
+        if os.path.isfile(video_path): continue
         create_video(in_dir_p + "frames/", in_dir_p + dn + ".mp4", font_p)
 
 
