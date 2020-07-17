@@ -38,12 +38,42 @@ def exec_ipynb(filename_or_url):
     exec(code, globals())
 
 
-# Generate the EarthTime layers and the thumbnail server urls
-# These urls can be called later to obtain video frames
+# Given starting and ending date string
+# Get a list of starting and ending datetime objects
 # Input:
 #   start_date_eastern: the date to start in EST time, e.g., "2019-01-01"
 #   end_date_eastern: the date to start in EST time, e.g., "2020-01-01"
 #   offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
+# Output:
+#   start_d: a pandas DatetimeIndex object, indicating the list of starting times
+#   end_d: a pandas DatetimeIndex object, indicating the list of ending times
+def get_start_end_time_list(start_date_eastern, end_date_eastern, offset_hours=3):
+    offset_d = pd.Timedelta(offset_hours, unit="h")
+    start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
+    end_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="right", tz="US/Eastern") - offset_d
+    return (start_d, end_d)
+
+
+# Convert lists of starting and ending date strings to objects
+# Input:
+#   start_date_str_list: a list of date strings, e.g., ["2019-04-23", "2019-12-22", "2020-02-05"]
+#   duration: the number of hours for each time range, e.g., 24
+#   offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
+# Output:
+#   start_d: a pandas DatetimeIndex object, indicating the list of starting times
+#   end_d: a pandas DatetimeIndex object, indicating the list of ending times
+def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
+    offset_d = pd.Timedelta(offset_hours, unit="h")
+    start_d = pd.DatetimeIndex(data=start_date_str_list, tz="US/Eastern") - offset_d
+    end_d = start_d + pd.Timedelta(duration, unit="h")
+    return (start_d, end_d)
+
+
+# Generate the EarthTime layers and the thumbnail server urls
+# These urls can be called later to obtain video frames
+# Input:
+#   start_d: a pandas DatetimeIndex object, indicating the list of starting times
+#   end_d: a pandas DatetimeIndex object, indicating the list of ending times
 #   url_partition: the number of partitions for the thumbnail server request for getting images of video frames
 # Output:
 #   df_layer: the pandas dataframe for the EarthTime layer document
@@ -52,11 +82,8 @@ def exec_ipynb(filename_or_url):
 #   start_d: a pandas series of the starting datetime object in EST time
 #   file_name: a list of file names
 #   redo: this is a number to force the server to avoid using the cached file
-def generate_metadata(start_date_eastern, end_date_eastern, offset_hours=3, url_partition=4, img_size=540, redo=1):
+def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=1):
     # Create rows in the EarthTime layer document
-    offset_d = pd.Timedelta(offset_hours, unit="h")
-    start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
-    end_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="right", tz="US/Eastern") - offset_d
     df_template = pd.read_csv("data/earth_time_layer_template.csv")
     df_layer = pd.concat([df_template]*len(start_d), ignore_index=True)
     file_name = "plume_" + end_d.strftime("%Y%m%d")
@@ -366,7 +393,7 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=True):
     video.release()
     if reduce_size:
         print("Reducing file size...")
-        subprocess.call("ffmpeg -i %s -vf scale=360:360 -b:v 1200k -bufsize 1200k -y %s" % (out_file_p_tmp, out_file_p),
+        subprocess.call("ffmpeg -i %s -vf scale=540:540 -b:v 1200k -bufsize 1200k -y %s" % (out_file_p_tmp, out_file_p),
                 shell=True)
         os.remove(out_file_p_tmp)
     else:
@@ -389,9 +416,23 @@ def load_utility():
 def genetate_earthtime_data():
     print("Generate EarthTime data...")
 
-    # Specify the starting and ending date, also the time offset
-    df_layer, df_share_url, df_img_url, start_d, file_name = generate_metadata("2019-04-01", "2019-05-01",
-            offset_hours=3, url_partition=4)
+    # Specify the dates that we want to process
+    start_d_1, end_d_1 = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3)
+
+    # Specify the dates that we want to process
+    start_d_str_list = ["2020-07-06", "2020-07-07", "2020-07-08", "2020-07-09", "2020-07-15",
+            "2020-06-02", "2020-06-09", "2020-06-20", "2020-06-25", "2020-05-02", "2020-05-24", "2020-05-26",
+            "2020-04-05", "2020-04-12", "2020-04-17", "2020-03-05", "2020-03-08", "2020-03-09", "2020-03-11",
+            "2020-03-12", "2020-03-26", "2020-02-03", "2020-02-06", "2020-02-17", "2020-02-23", "2020-02-24",
+            "2020-01-07", "2020-01-09", "2020-01-10", "2020-01-13", "2020-01-14", "2020-01-15", "2020-01-22",
+            "2020-01-23", "2020-01-24", "2019-12-08", "2019-12-20", "2019-12-21", "2019-12-22", "2019-12-23",
+            "2019-12-24", "2019-12-25", "2019-12-26", "2019-12-27", "2019-12-28", "2019-12-29"]
+    start_d_2, end_d_2 = get_time_range_list(start_d_str_list, duration=24, offset_hours=3)
+
+    # Specify the starting and ending time
+    start_d = start_d_1.union(start_d_2)
+    end_d = end_d_1.union(end_d_2)
+    df_layer, df_share_url, df_img_url, start_d, file_name = generate_metadata(start_d, end_d, url_partition=4)
 
     # Save rows of EarthTime CSV layers to a file
     p = "data/earth_time_layer.csv"
@@ -406,6 +447,38 @@ def genetate_earthtime_data():
     # Save rows of thumbnail server urls to a file
     p = "data/earth_time_thumbnail_urls.csv"
     df_img_url.to_csv(p, index=False)
+    os.chmod(p, 0o777)
+
+    # Get the number of smell reports in the desired dates
+    time_list = list(map(lambda x: x.timestamp(), start_d.to_pydatetime()))
+    time_list += list(map(lambda x: x.timestamp(), end_d.to_pydatetime()))
+    start_time = int(min(time_list)) - 5000
+    end_time = int(max(time_list)) + 5000
+    smell_pgh_api_url = "https://api.smellpittsburgh.org/api/v2/smell_reports?group_by=day&aggregate=true&smell_value=3%2C4%2C5&start_time=" + str(start_time) + "&end_time=" + str(end_time) + "&state_ids=1&timezone_string=America%252FNew_York"
+    try:
+        print("\t{Request} %s\n" % smell_pgh_api_url)
+        response = urllib.request.urlopen(smell_pgh_api_url)
+        smell_counts = json.load(response)
+        print("\t{Done} %s\n" % smell_pgh_api_url)
+    except Exception as ex:
+        print("\t{%s} %s\n" % (ex, smell_pgh_api_url))
+        smell_counts = None
+
+    # Create the json object (for front-end)
+    viz_json = {"columnNames": ["label", "color", "file_name"], "data": []}
+    for d in sorted(end_d.to_pydatetime()):
+        label = d.strftime("%b %d")
+        if smell_counts is None:
+            color = -1
+        else:
+            color = smell_counts[d.strftime("%Y-%m-%d")]
+        vid_fn = d.strftime("%Y%m%d") + ".mp4"
+        viz_json["data"].append([label, color, vid_fn])
+
+    # Save the json for the front-end visualization website
+    p = "data/plume_viz.json"
+    with open(p, "w") as f:
+        json.dump(viz_json, f)
     os.chmod(p, 0o777)
 
     return (start_d, file_name, df_share_url, df_img_url)
@@ -470,12 +543,21 @@ def main():
     program_start_time = time.time()
 
     load_utility()
+
+    # Run the following line first to generate earthtime layers and the json file for the visualization website
+    # Copy and paste the layers to the earthtime layers CSV file
+    # Copy and paste the json file to the front-end plume visualization website
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
 
-    run_hysplit(start_d, file_name)
-    download_video_frames(df_share_url, df_img_url)
-    rename_video_frames()
-    create_all_videos()
+    # Then run the following to create hysplit simulation files
+    #run_hysplit(start_d, file_name)
+
+    # Next, run the following to download videos
+    #download_video_frames(df_share_url, df_img_url)
+
+    # Finally, create videos
+    #rename_video_frames()
+    #create_all_videos()
 
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
