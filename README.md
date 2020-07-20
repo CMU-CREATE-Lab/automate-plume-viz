@@ -8,3 +8,7 @@ Change the permission of the folder so that the CoCalc system can read that.
 ```sh
 chmod 777 automate-plume-viz
 ```
+Run the script using the screen command
+```sh
+sh bg.sh python automate_plume_viz.py
+```
