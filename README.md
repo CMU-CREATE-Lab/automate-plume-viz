@@ -12,7 +12,7 @@ Then, go to the [CoCalc project](https://cocalc.createlab.org:8443/projects/9ab7
 ```sh
 python automate_plume_viz.py
 ```
-Run the script using the screen command
+You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. To run the code at the background (when you need to process a lot of dates), you can run the code using the CoCalc interface, and the script will run until end. Or, you can use the following command on the CoCalc terminal, which use the Linux screen command:
 ```sh
 sh bg.sh python automate_plume_viz.py
 ```
