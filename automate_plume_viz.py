@@ -135,7 +135,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0):
     df_img_url = pd.DataFrame(data={"img_url": img_url_ls, "date": dt_img_url_ls})
 
     # return the data
-    return (df_layer, df_share_url, df_img_url, start_d, file_name)
+    return (df_layer, df_share_url, df_img_url, file_name)
 
 
 # Run the HYSPLIT simulation
@@ -393,8 +393,9 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
     video.release()
     if reduce_size:
         print("Reducing file size...")
-        subprocess.call("ffmpeg -i %s -vf scale=540:540 -b:v 1200k -bufsize 1200k -y %s" % (out_file_p_tmp, out_file_p),
-                shell=True)
+        subprocess.call("ffmpeg -i %s -vf scale=540:540 -b:v 1200k -bufsize 1200k -y %s" % (out_file_p_tmp, out_file_p), shell=True)
+        # TODO: the above ffmpeg compress too much, need to try the following one
+        #subprocess.call("ffmpeg -i %s -vf scale=540:540 -vcodec libx264 -preset slow -pix_fmt yuv420p -crf 20 -movflags faststart -y %s" % (out_file_p_tmp, out_file_p), shell=True)
         os.remove(out_file_p_tmp)
     else:
         os.rename(out_file_p_tmp, out_file_p)
@@ -417,9 +418,12 @@ def genetate_earthtime_data():
     print("Generate EarthTime data...")
 
     # Specify the dates that we want to process
-    start_d_1, end_d_1 = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3)
+    date_list = []
 
-    # Specify the dates that we want to process
+    # Date batch 1
+    date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
+
+    # Date batch 2
     start_d_str_list = ["2020-07-06", "2020-07-07", "2020-07-08", "2020-07-09", "2020-07-15",
             "2020-06-02", "2020-06-09", "2020-06-20", "2020-06-25", "2020-05-02", "2020-05-24", "2020-05-26",
             "2020-04-05", "2020-04-12", "2020-04-17", "2020-03-05", "2020-03-08", "2020-03-09", "2020-03-11",
@@ -427,14 +431,28 @@ def genetate_earthtime_data():
             "2020-01-07", "2020-01-09", "2020-01-10", "2020-01-13", "2020-01-14", "2020-01-15", "2020-01-22",
             "2020-01-23", "2020-01-24", "2019-12-08", "2019-12-20", "2019-12-21", "2019-12-22", "2019-12-23",
             "2019-12-24", "2019-12-25", "2019-12-26", "2019-12-27", "2019-12-28", "2019-12-29"]
-    start_d_2, end_d_2 = get_time_range_list(start_d_str_list, duration=24, offset_hours=3)
+    date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Specify the starting and ending time
-    start_d = start_d_1.union(start_d_2)
-    end_d = end_d_1.union(end_d_2)
-    # TODO: need different generate_metadata that can use different redo parameters
-    # TODO: so that we can control different stages of processing
-    df_layer, df_share_url, df_img_url, start_d, file_name = generate_metadata(start_d, end_d, url_partition=4, redo=2)
+    df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
+    for i in range(len(date_list)):
+        sd, ed = date_list[i]
+        if i == 0: # batch 1
+            redo = 1
+        elif i == 1: # batch 2
+            redo = 2
+        else: # other batch
+            redo = 0
+        dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, redo=redo)
+        if df_layer is None:
+            df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
+        else:
+            df_layer = pd.concat([df_layer, dl], ignore_index=True)
+            df_share_url = pd.concat([df_share_url, ds], ignore_index=True)
+            df_img_url = pd.concat([df_img_url, di], ignore_index=True)
+            file_name = file_name.union(fn)
+            start_d = start_d.union(sd)
+            end_d = end_d.union(ed)
 
     # Save rows of EarthTime CSV layers to a file
     p = "data/earth_time_layer.csv"
@@ -451,39 +469,7 @@ def genetate_earthtime_data():
     df_img_url.to_csv(p, index=False)
     os.chmod(p, 0o777)
 
-    # Get the number of smell reports in the desired dates
-    time_list = list(map(lambda x: x.timestamp(), start_d.to_pydatetime()))
-    time_list += list(map(lambda x: x.timestamp(), end_d.to_pydatetime()))
-    start_time = int(min(time_list)) - 5000
-    end_time = int(max(time_list)) + 5000
-    smell_pgh_api_url = "https://api.smellpittsburgh.org/api/v2/smell_reports?group_by=day&aggregate=true&smell_value=3%2C4%2C5&start_time=" + str(start_time) + "&end_time=" + str(end_time) + "&state_ids=1&timezone_string=America%252FNew_York"
-    try:
-        print("\t{Request} %s\n" % smell_pgh_api_url)
-        response = urllib.request.urlopen(smell_pgh_api_url)
-        smell_counts = json.load(response)
-        print("\t{Done} %s\n" % smell_pgh_api_url)
-    except Exception as ex:
-        print("\t{%s} %s\n" % (ex, smell_pgh_api_url))
-        smell_counts = None
-
-    # Create the json object (for front-end)
-    viz_json = {"columnNames": ["label", "color", "file_name"], "data": []}
-    for d in sorted(end_d.to_pydatetime()):
-        label = d.strftime("%b %d")
-        if smell_counts is None:
-            color = -1
-        else:
-            color = smell_counts[d.strftime("%Y-%m-%d")]
-        vid_fn = d.strftime("%Y%m%d") + ".mp4"
-        viz_json["data"].append([label, color, vid_fn])
-
-    # Save the json for the front-end visualization website
-    p = "data/plume_viz.json"
-    with open(p, "w") as f:
-        json.dump(viz_json, f)
-    os.chmod(p, 0o777)
-
-    return (start_d, file_name, df_share_url, df_img_url)
+    return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
 def run_hysplit(start_d, file_name, num_workers=4):
@@ -540,6 +526,45 @@ def create_all_videos():
         create_video(in_dir_p + "frames/", in_dir_p + dn + ".mp4", font_p)
 
 
+def generate_plume_viz_json(start_d, end_d):
+    print("Generate the json file for the front-end...")
+
+    # Get the number of smell reports in the desired dates
+    time_list = list(map(lambda x: x.timestamp(), start_d.to_pydatetime()))
+    time_list += list(map(lambda x: x.timestamp(), end_d.to_pydatetime()))
+    start_time = int(min(time_list)) - 5000
+    end_time = int(max(time_list)) + 5000
+    smell_pgh_api_url = "https://api.smellpittsburgh.org/api/v2/smell_reports?group_by=day&aggregate=true&smell_value=3%2C4%2C5&start_time=" + str(start_time) + "&end_time=" + str(end_time) + "&state_ids=1&timezone_string=America%252FNew_York"
+    try:
+        print("\t{Request} %s\n" % smell_pgh_api_url)
+        response = urllib.request.urlopen(smell_pgh_api_url)
+        smell_counts = json.load(response)
+        print("\t{Done} %s\n" % smell_pgh_api_url)
+    except Exception as ex:
+        print("\t{%s} %s\n" % (ex, smell_pgh_api_url))
+        smell_counts = None
+
+    # Create the json object (for front-end)
+    viz_json = {"columnNames": ["label", "color", "file_name"], "data": []}
+    for d in sorted(end_d.to_pydatetime()):
+        label = d.strftime("%b %d")
+        if smell_counts is None:
+            color = -1
+        else:
+            color = smell_counts[d.strftime("%Y-%m-%d")]
+        vid_fn = d.strftime("%Y%m%d")
+        vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
+        if os.path.isfile(vid_path):
+            # Only add to json if the file exists
+            viz_json["data"].append([label, color, vid_fn + ".mp4"])
+
+    # Save the json for the front-end visualization website
+    p = "data/plume_viz.json"
+    with open(p, "w") as f:
+        json.dump(viz_json, f)
+    os.chmod(p, 0o777)
+
+
 # The main function
 def main():
     program_start_time = time.time()
@@ -548,7 +573,7 @@ def main():
 
     # Run the following line first to generate earthtime layers
     # Copy and paste the layers to the earthtime layers CSV file
-    start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
+    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
 
     # Then run the following to create hysplit simulation files
     #run_hysplit(start_d, file_name)
@@ -558,11 +583,11 @@ def main():
 
     # Then, rename files and create videos
     #rename_video_frames()
-    create_all_videos()
+    #create_all_videos()
 
     # Finally, generate the json file for the front-end website
     # Copy and paste the json file to the front-end plume visualization website
-    # TODO: move the json file generation code from genetate_earthtime_data to here
+    generate_plume_viz_json(start_d, end_d)
 
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
