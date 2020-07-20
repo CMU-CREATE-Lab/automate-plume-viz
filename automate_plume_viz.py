@@ -82,7 +82,7 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
 #   start_d: a pandas series of the starting datetime object in EST time
 #   file_name: a list of file names
 #   redo: this is a number to force the server to avoid using the cached file
-def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=1):
+def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0):
     # Create rows in the EarthTime layer document
     df_template = pd.read_csv("data/earth_time_layer_template.csv")
     df_layer = pd.concat([df_template]*len(start_d), ignore_index=True)
@@ -371,7 +371,7 @@ def get_all_dir_names_in_folder(path):
 #   out_file_p: the path to the file that will store the video
 #   font_p: the path to the font file for the caption
 #   reduce_size: if True, will reduce file size using ffmpeg
-def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=True):
+def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
     print("Process images in %r" % in_dir_p)
     out_file_p_tmp = out_file_p + ".mp4"
     time_list = []
@@ -432,7 +432,9 @@ def genetate_earthtime_data():
     # Specify the starting and ending time
     start_d = start_d_1.union(start_d_2)
     end_d = end_d_1.union(end_d_2)
-    df_layer, df_share_url, df_img_url, start_d, file_name = generate_metadata(start_d, end_d, url_partition=4)
+    # TODO: need different generate_metadata that can use different redo parameters
+    # TODO: so that we can control different stages of processing
+    df_layer, df_share_url, df_img_url, start_d, file_name = generate_metadata(start_d, end_d, url_partition=4, redo=2)
 
     # Save rows of EarthTime CSV layers to a file
     p = "data/earth_time_layer.csv"
@@ -544,9 +546,8 @@ def main():
 
     load_utility()
 
-    # Run the following line first to generate earthtime layers and the json file for the visualization website
+    # Run the following line first to generate earthtime layers
     # Copy and paste the layers to the earthtime layers CSV file
-    # Copy and paste the json file to the front-end plume visualization website
     start_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
 
     # Then run the following to create hysplit simulation files
@@ -555,9 +556,13 @@ def main():
     # Next, run the following to download videos
     #download_video_frames(df_share_url, df_img_url)
 
-    # Finally, create videos
+    # Then, rename files and create videos
     #rename_video_frames()
-    #create_all_videos()
+    create_all_videos()
+
+    # Finally, generate the json file for the front-end website
+    # Copy and paste the json file to the front-end plume visualization website
+    # TODO: move the json file generation code from genetate_earthtime_data to here
 
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
