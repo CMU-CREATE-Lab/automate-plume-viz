@@ -16,3 +16,11 @@ You can SSH to the hal21 server and use the Vim editor to write code. Or, anothe
 ```sh
 sh bg.sh python automate_plume_viz.py
 ```
+After running the script, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to run the following command to copy the videos to the place that can be accessed by the front-end website:
+```sh
+cp /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/video/
+```
+
+TODO: talk about how to copy files to the front-end website.
+
+TODO: talk about how to copy EarthTime layers before running the hysplit simulation.
