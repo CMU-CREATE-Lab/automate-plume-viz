@@ -14,7 +14,7 @@ To begin the pipeline, run the following command to generate the earthtime layer
 ```sh
 python automate_plume_viz.py genetate_earthtime_data
 ```
-Next, run the hysplit simulation and generate the particle files. This will take a very long time, and it is better to use the provided shell script to run the command at the background using the Linux screen command::
+Next, run the hysplit simulation and generate the particle files. This will take a very long time, and it is better to use the provided shell script to run the command at the background using the Linux screen command:
 ```sh
 sh bg.sh python automate_plume_viz.py run_hysplit
 ```
