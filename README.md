@@ -8,19 +8,37 @@ Change the permission of the folder so that the CoCalc system can read that.
 ```sh
 chmod 777 automate-plume-viz
 ```
-Then, go to the [CoCalc project](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/terminal.term?session=default) with the following command:
+Go to the [CoCalc project](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface.
+
+To begin the pipeline, run the following command to generate the earthtime layers data. This will create several files in the "data/" folder. You will need to open the "earth_time_layer.csv" file and copy the rows to the "[DAVOS2019 EarthTime Waypoints and CSV Layers](https://docs.google.com/spreadsheets/d/1zbXFtyevXqfZolxVPNhojZn7y_zxofbe_4UxYmdXp8k/edit#gid=870361385)" Google document. Ask Randy Sargent or Paul Dille for the permission to edit this file, and make sure you understand what each column means. 
 ```sh
-python automate_plume_viz.py
+python automate_plume_viz.py genetate_earthtime_data
 ```
-You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. To run the code at the background (when you need to process a lot of dates), you can run the code using the CoCalc interface, and the script will run until end. Or, you can use the following command on the CoCalc terminal, which use the Linux screen command:
+Next, run the hysplit simulation and generate the particle files. This will take a very long time, and it is better to use the provided shell script to run the command at the background using the Linux screen command::
 ```sh
-sh bg.sh python automate_plume_viz.py
+sh bg.sh python automate_plume_viz.py run_hysplit
 ```
-After running the script, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to run the following command to copy the videos to the place that can be accessed by the front-end website:
+Then, call the thumbnail server to process the video frames. By default, the script uses 8 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. Notice that if you forget to copy and paste the EarthTime layers, this step will fail. This step will also take a very long time, and it is better to use the background script.
+```sh
+sh bg.sh python automate_plume_viz.py download_video_frames
+```
+Next, rename the downloaded video frames based on epochtime.
+```sh
+python automate_plume_viz.py rename_video_frames
+```
+Then, create all videos in the "data/rgb/" folder. This step requires opencv and ffmpeg packages. Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files. This step will also take a long time, and it is better to use the background script.
+```sh
+sh bg.sh python automate_plume_viz.py create_all_videos
+```
+After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access, by using the following command:
 ```sh
 cp /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/video/
 ```
-
-TODO: talk about how to copy files to the front-end website.
-
-TODO: talk about how to copy EarthTime layers before running the hysplit simulation.
+Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
+```sh
+python automate_plume_viz.py generate_plume_viz_json
+```
+If you wish to run all of the steps at the background, use the following command:
+```sh
+sh bg.sh python automate_plume_viz.py pipeline
+```
