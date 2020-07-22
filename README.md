@@ -42,3 +42,4 @@ If you wish to run all of the steps at the background, use the following command
 ```sh
 sh bg.sh python automate_plume_viz.py pipeline
 ```
+To add more dates in the pipeline, edit the genetate_earthtime_data() function in the "automate_plume_viz.py" file.
