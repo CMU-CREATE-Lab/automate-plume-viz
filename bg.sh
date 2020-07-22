@@ -9,8 +9,14 @@ if [ "$1" != "" ] && [ "$2" != "" ]
 then
   echo "Run: $1 $2 $3 $4 $5 $6"
 else
-  echo "Usage examples:\n\
-  sh bg.sh python automate_plume_viz.py"
+  echo "Usage examples:"
+  echo "sh bg.sh python automate_plume_viz.py genetate_earthtime_data"
+  echo "sh bg.sh python automate_plume_viz.py run_hysplit"
+  echo "sh bg.sh python automate_plume_viz.py download_video_frames"
+  echo "sh bg.sh python automate_plume_viz.py rename_video_frames"
+  echo "sh bg.sh python automate_plume_viz.py create_all_videos"
+  echo "sh bg.sh python automate_plume_viz.py generate_plume_viz_json"
+  echo "sh bg.sh python automate_plume_viz.py pipeline"
   exit 1
 fi
 

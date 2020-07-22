@@ -1,3 +1,4 @@
+import sys
 import os
 import importlib
 import re, array, csv, datetime, glob, json, math, random, stat
@@ -566,7 +567,18 @@ def generate_plume_viz_json(start_d, end_d):
 
 
 # The main function
-def main():
+def main(argv):
+    if len(argv) < 2:
+        print("Usage:")
+        print("python automate_plume_viz.py genetate_earthtime_data")
+        print("python automate_plume_viz.py run_hysplit")
+        print("python automate_plume_viz.py download_video_frames")
+        print("python automate_plume_viz.py rename_video_frames")
+        print("python automate_plume_viz.py create_all_videos")
+        print("python automate_plume_viz.py generate_plume_viz_json")
+        print("python automate_plume_viz.py pipeline")
+        return
+
     program_start_time = time.time()
 
     load_utility()
@@ -574,24 +586,33 @@ def main():
     # Run the following line first to generate earthtime layers
     # Copy and paste the layers to the earthtime layers CSV file
     start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
+    print("genetate_earthtime_data")
+    if argv[1] == "genetate_earthtime_data": return
 
     # Then run the following to create hysplit simulation files
-    #run_hysplit(start_d, file_name)
+    if argv[1] in ["run_hysplit", "pipeline"]:
+        run_hysplit(start_d, file_name)
 
     # Next, run the following to download videos
-    #download_video_frames(df_share_url, df_img_url)
+    if argv[1] in ["download_video_frames", "pipeline"]:
+        download_video_frames(df_share_url, df_img_url)
 
-    # Then, rename files and create videos
-    #rename_video_frames()
-    #create_all_videos()
+    # Then, rename files to epochtime
+    if argv[1] in ["rename_video_frames", "pipeline"]:
+        rename_video_frames()
+
+    # Then, create all videos
+    if argv[1] in ["create_all_videos", "pipeline"]:
+        create_all_videos()
 
     # Finally, generate the json file for the front-end website
     # Copy and paste the json file to the front-end plume visualization website
-    generate_plume_viz_json(start_d, end_d)
+    if argv[1] in ["generate_plume_viz_json", "pipeline"]:
+        generate_plume_viz_json(start_d, end_d)
 
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
