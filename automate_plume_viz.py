@@ -84,15 +84,20 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
 #   file_name: a list of file names
 #   redo: this is a number to force the server to avoid using the cached file
 def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0):
+    if url_partition < 1:
+        url_partition = 1
+        print("Error! url_partition is less than 1. Set the url_partition to 1 to fix the error.")
+
     # Create rows in the EarthTime layer document
     df_template = pd.read_csv("data/earth_time_layer_template.csv")
     df_layer = pd.concat([df_template]*len(start_d), ignore_index=True)
     file_name = "plume_" + end_d.strftime("%Y%m%d")
+    share_link_id = file_name
     start_d_utc = start_d.tz_convert("UTC")
     end_d_utc = end_d.tz_convert("UTC")
     df_layer["Start date"] = start_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["End date"] = end_d_utc.strftime("%Y%m%d%H%M%S")
-    df_layer["Share link identifier"] = file_name
+    df_layer["Share link identifier"] = share_link_id
     df_layer["Name"] = "PARDUMP " + end_d.strftime("%Y-%m-%d")
     df_layer["URL"] = "https://cocalc-www.createlab.org/pardumps/" + file_name + ".bin"
 
@@ -105,9 +110,15 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0):
     dt_share_url_ls = [] # the date of the share urls
     img_url_ls = [] # thumbnail server urls
     dt_img_url_ls = [] # the date of the thumbnail server urls
-    if url_partition < 1:
-        url_partition = 1
-        print("Error! url_partition is less than 1. Set the url_partition to 1 to fix the error.")
+
+    #TODO: for testing
+    share_link_id += "_v2"
+    df_layer["Share link identifier"] = share_link_id
+    df_layer["Name"] += " v2"
+    df_layer["Vertex Shader"] = "WebGLVectorTile2.particleAltFadeVertexShader"
+    df_layer["Fragment Shader"] = "WebGLVectorTile2.particleAltFadeFragmentShader"
+    et_root_url = "https://headless-rsargent.earthtime.org/#"
+
     for i in range(len(start_d_utc)):
         sdt = start_d_utc[i]
         edt = end_d_utc[i]
@@ -117,7 +128,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0):
         date_str = sdt_str[:8]
         bt = "bt=" + sdt_str + "&"
         et = "et=" + edt_str + "&"
-        l = "l=bdrk_detailed,smell_my_city_pgh_reports_top,plume_" + date_str + "&"
+        l = "l=bdrk_detailed,smell_my_city_pgh_reports_top," + share_link_id[i] + "&"
         share_url_ls.append(et_root_url + l + bt + et + et_part)
         dt_share_url_ls.append(date_str)
         # Add the thumbnail server url
