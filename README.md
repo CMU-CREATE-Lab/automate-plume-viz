@@ -24,7 +24,7 @@ sh bg.sh python automate_plume_viz.py download_video_frames
 ```
 Next, rename the downloaded video frames based on epochtime.
 ```sh
-python automate_plume_viz.py rename_video_frames
+sh bg.sh python automate_plume_viz.py rename_video_frames
 ```
 Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files. This step will also take a long time, and it is better to use the background script.
 ```sh
