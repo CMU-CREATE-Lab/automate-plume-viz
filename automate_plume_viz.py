@@ -445,6 +445,9 @@ def genetate_earthtime_data():
             "2019-12-24", "2019-12-25", "2019-12-26", "2019-12-27", "2019-12-28", "2019-12-29"]
     date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
+    # Date batch 3
+    date_list.append(get_start_end_time_list("2019-12-01", "2019-12-31", offset_hours=3))
+
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
     for i in range(len(date_list)):
@@ -597,7 +600,6 @@ def main(argv):
     # Run the following line first to generate earthtime layers
     # Copy and paste the layers to the earthtime layers CSV file
     start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
-    print("genetate_earthtime_data")
     if argv[1] == "genetate_earthtime_data": return
 
     # Then run the following to create hysplit simulation files
