@@ -445,7 +445,7 @@ def genetate_earthtime_data():
     date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Date batch 3
-    date_list.append(get_start_end_time_list("2019-12-01", "2019-12-31", offset_hours=3))
+    date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
