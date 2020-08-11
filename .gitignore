@@ -1,6 +1,7 @@
 *.ipynb.sage-jupyter2
 *.DS_Store
 data/rgb/
+data_old/
 *.html
 *.term
 *.pyc

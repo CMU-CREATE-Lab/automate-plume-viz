@@ -209,6 +209,11 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     print("Created %s" % o_file)
     os.chmod(o_file, 0o777)
 
+    # Cleanup files
+    print("Cleaning files...")
+    for folder in path_list:
+        cleanup(get_all_file_names_in_folder(folder))
+
 
 # The parallel worker for simulation
 def simulate_worker(start_time_eastern, o_file, sources):
