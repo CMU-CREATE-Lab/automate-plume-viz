@@ -178,7 +178,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     # Save pdump text files (the generated files are cached)
     pdump_txt_list = []
     for folder in path_list:
-        if not findInFolder(folder,'*.gz') and not findInFolder(folder,'PARDUMP*.txt'):
+        if not findInFolder(folder,'PARDUMP*.txt'):
             pdump = findInFolder(folder,'PARDUMP.*')
             cmd = "/opt/hysplit/exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
             if pdump.find('.txt') == -1:
@@ -212,7 +212,9 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     # Cleanup files
     print("Cleaning files...")
     for folder in path_list:
-        cleanup(get_all_file_names_in_folder(folder))
+        pdump_txt = findInFolder(folder,'PARDUMP*.txt')
+        print("Remove file %s" % pdump_txt)
+        os.remove(pdump_txt)
 
 
 # The parallel worker for simulation
@@ -257,6 +259,8 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
             arg_list.append((img_url_list[i], dir_p_dt + str(i) + ".zip"))
     # Download the files in parallel
     result = Pool(num_workers).starmap(urlretrieve_worker, arg_list)
+    Pool.close()
+    Pool.join()
     for r in result:
         if r: num_errors += 1
     if num_errors > 0:
