@@ -441,8 +441,7 @@ def genetate_earthtime_data():
     date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
 
     # Date batch 2
-    start_d_str_list = ["2020-07-06", "2020-07-07", "2020-07-08", "2020-07-09", "2020-07-15",
-            "2020-06-02", "2020-06-09", "2020-06-20", "2020-06-25", "2020-05-02", "2020-05-24", "2020-05-26",
+    start_d_str_list = [
             "2020-04-05", "2020-04-12", "2020-04-17", "2020-03-05", "2020-03-08", "2020-03-09", "2020-03-11",
             "2020-03-12", "2020-03-26", "2020-02-03", "2020-02-06", "2020-02-17", "2020-02-23", "2020-02-24",
             "2020-01-07", "2020-01-09", "2020-01-10", "2020-01-13", "2020-01-14", "2020-01-15", "2020-01-22",
@@ -451,6 +450,9 @@ def genetate_earthtime_data():
 
     # Date batch 3
     date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
+
+    # Date batch 4
+    date_list.append(get_start_end_time_list("2020-05-01", "2020-08-01", offset_hours=3))
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
