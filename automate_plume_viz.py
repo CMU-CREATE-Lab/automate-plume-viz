@@ -259,8 +259,6 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
             arg_list.append((img_url_list[i], dir_p_dt + str(i) + ".zip"))
     # Download the files in parallel
     result = Pool(num_workers).starmap(urlretrieve_worker, arg_list)
-    Pool.close()
-    Pool.join()
     for r in result:
         if r: num_errors += 1
     if num_errors > 0:
