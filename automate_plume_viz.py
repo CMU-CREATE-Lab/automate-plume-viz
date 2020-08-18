@@ -240,7 +240,7 @@ def simulate_worker(start_time_eastern, o_file, sources):
 #   dir_p: the folder path for saving the files
 #   num_try: the number of times that the function has been called
 #   num_workers: the number of workers to download the frames
-def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=8):
+def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=4):
     print("="*100)
     print("="*100)
     print("This function has been called for %d times." % num_try)
