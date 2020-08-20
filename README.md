@@ -20,7 +20,7 @@ Next, run the hysplit simulation and generate the particle files. This will take
 ```sh
 sh bg.sh python automate_plume_viz.py run_hysplit
 ```
-Then, call the thumbnail server to process the video frames. By default, the script uses 8 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. Notice that if you forget to copy and paste the EarthTime layers, this step will fail. This step will also take a very long time, and it is better to use the background script.
+Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. Notice that if you forget to copy and paste the EarthTime layers, this step will fail. This step will also take a very long time, and it is better to use the background script.
 ```sh
 sh bg.sh python automate_plume_viz.py download_video_frames
 ```
