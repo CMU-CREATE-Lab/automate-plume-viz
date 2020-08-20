@@ -49,7 +49,7 @@ To add more dates in the pipeline, edit the genetate_earthtime_data() function i
 # For your application
 
 **DO NOT edit the "automate_plume_viz.py" code or others in this project directly.** To use this code for your application, you need to:
-- Go to [the "air-src" folder on CoCalc](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/?session=default) and create a new folder for your project
+- Go to [the "air-src" folder on CoCalc](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/?session=default) and create a new folder for your project (feel free to copy the code in this repository for your use)
 - Search and read every "IMPORTANT" tag in the "automate_plume_viz.py" file
 - Make sure that the share urls you generated have unique identifiers in the EarthTime layers by changing the "prefix" option for the "generate_metadata()" function 
 - If you do not need smell reports in your visualization, change the "add_smell" option for the "generate_metadata()" function to False
