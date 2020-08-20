@@ -30,7 +30,7 @@ Next, rename the downloaded video frames based on epochtime.
 ```sh
 sh bg.sh python automate_plume_viz.py rename_video_frames
 ```
-Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files.
+Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files in the "data/rgb/" folder.
 ```sh
 sh bg.sh python automate_plume_viz.py create_all_videos
 ```
@@ -56,5 +56,6 @@ To add more dates in the pipeline, edit the genetate_earthtime_data() function i
 - Make sure that the share urls you generated have unique identifiers in the EarthTime layers by changing the "prefix" option for the "generate_metadata()" function 
 - If you do not need smell reports in your visualization, change the "add_smell" option for the "generate_metadata()" function to False
 - Change pollution sources in the "run_hysplit()" function
+- If you need to add customized caption or graphs on top of the video frames, edit the "create_video()" function in the "automate_plume_viz.py" file
 
 Before running large tasks that will take a long time on the CoCalc system, make sure that you notify and talk to system administrators.
