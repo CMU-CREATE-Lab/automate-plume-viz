@@ -10,7 +10,7 @@ Change the permission of the folder so that the CoCalc system can read that. (Th
 ```sh
 chmod 777 automate-plume-viz
 ```
-Go to the [CoCalc project](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface.
+**Please do not edit the code on CoCalc if you want to use the code for your own project (see the next section).** For co-workers on this project, go to the [CoCalc project](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface.
 
 To begin the pipeline, run the following command to generate the EarthTime layers. This will create several files in the "data/" folder. You will need to open the "earth_time_layer.csv" file and copy the rows to the "[DAVOS2019 EarthTime Waypoints and CSV Layers](https://docs.google.com/spreadsheets/d/1zbXFtyevXqfZolxVPNhojZn7y_zxofbe_4UxYmdXp8k/edit#gid=870361385)" Google document. Ask Randy Sargent or Paul Dille for the permission to edit this file, and make sure you understand what each column means. 
 ```sh
@@ -49,6 +49,7 @@ To add more dates in the pipeline, edit the genetate_earthtime_data() function i
 # For your application
 
 To use this code for your application, you need to:
+- Go to [the "air-src" folder on CoCalc](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/?session=default) and create a new folder for your project (DO NOT edit the "automate_plume_viz.py" code or others in this project directly)
 - Search and read every "IMPORTANT" tag in the "automate_plume_viz.py" file
 - Make sure that the share urls you generated have unique identifiers in the EarthTime layers by changing the "prefix" option for the "generate_metadata()" function 
 - If you do not need smell reports in your visualization, change the "add_smell" option for the "generate_metadata()" function to False
