@@ -16,11 +16,11 @@ To begin the pipeline, run the following command to generate the EarthTime layer
 ```sh
 python automate_plume_viz.py genetate_earthtime_data
 ```
-Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and will take a very long time (hours and days). It is better to use the provided shell script to run the command at the background using the Linux screen command:
+Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and will take a very long time (hours and days).
 ```sh
 sh bg.sh python automate_plume_viz.py run_hysplit
 ```
-Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and will take a very long time (hours and days). Notice that if you forget to copy and paste the EarthTime layers, this step will fail. It is better to use the provided shell script to run the command at the background using the Linux screen command:
+Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and will take a very long time (hours and days). Notice that if you forget to copy and paste the EarthTime layers, this step will fail.
 ```sh
 sh bg.sh python automate_plume_viz.py download_video_frames
 ```
@@ -28,7 +28,7 @@ Next, rename the downloaded video frames based on epochtime.
 ```sh
 sh bg.sh python automate_plume_viz.py rename_video_frames
 ```
-Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files. This step will also take a long time, and it is better to use the background script.
+Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files.
 ```sh
 sh bg.sh python automate_plume_viz.py create_all_videos
 ```
