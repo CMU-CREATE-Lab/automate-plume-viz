@@ -1,3 +1,5 @@
+# Setup the tool
+
 SSH to the hal21 server and clone this repository. (This step is only for the CoCalc system administrator.)
 ```sh
 ssh [USER_NAME]@hal21.andrew.cmu.edu
@@ -43,3 +45,13 @@ If you wish to run all of the steps at the background, use the following command
 sh bg.sh python automate_plume_viz.py pipeline
 ```
 To add more dates in the pipeline, edit the genetate_earthtime_data() function in the "automate_plume_viz.py" file.
+
+# For your application
+
+To use this code for your application, you need to:
+- Search and read every "IMPORTANT" tag in the "automate_plume_viz.py" file
+- Make sure that the share urls you generated have unique identifiers in the EarthTime layers by changing the "prefix" option for the "generate_metadata()" function 
+- If you do not need smell reports in your visualization, change the "add_smell" option for the "generate_metadata()" function to False
+- Change pollution sources in the "run_hysplit()" function
+
+Before running large tasks that will take a long time on the CoCalc system, make sure that you notify and talk to system administrators.
