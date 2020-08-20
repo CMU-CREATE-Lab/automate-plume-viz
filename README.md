@@ -16,7 +16,7 @@ To begin the pipeline, run the following command to generate the EarthTime layer
 ```sh
 python automate_plume_viz.py genetate_earthtime_data
 ```
-Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and will take a very long time (hours and days).
+Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and will take a very long time (hours and days). Use the provided shell script "bg.sh" to run the code at the background, or use CoCalc interface to run the code, so that the program will not stop in the middle when you exit the terminal.
 ```sh
 sh bg.sh python automate_plume_viz.py run_hysplit
 ```
