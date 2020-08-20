@@ -1,3 +1,5 @@
+This repository hosts the code for generating videos that show the visualizations of [smell reports](https://smellpgh.org/) and forward dispersion simulation (using the [HYSPLIT model](https://www.ready.noaa.gov/HYSPLIT.php)). For getting wind information, you may want to check [WindNinja](https://www.firelab.org/project/windninja).
+
 # Setup the tool
 
 SSH to the hal21 server and clone this repository. (This step is only for the CoCalc system administrator.)
