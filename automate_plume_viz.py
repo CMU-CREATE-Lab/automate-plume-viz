@@ -83,13 +83,14 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
 #   lat: a string that indicates the latitude of the EarthTime base map
 #   lng: a string that indicates the longitude of the EarthTime base map
 #   zoom: a string that indicates the zoom level of the EarthTime base map
+#   file_path: a path to indicate that your hysplit bin files are under /projects/cocalc-www.createlab.org/[file_path]
 # Output:
 #   df_layer: the pandas dataframe for the EarthTime layer document
 #   df_share_url: the pandas dataframe for the share urls
 #   df_img_url: the pandas dataframe for the thumbnail server urls to get images of video frames
-#   file_name: a list of file names
+#   file_name: a list of file names that are used for saving the hysplit bin files
 def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
-        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233"):
+        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", file_path="test/"):
     if url_partition < 1:
         url_partition = 1
         print("Error! url_partition is less than 1. Set the url_partition to 1 to fix the error.")
@@ -105,7 +106,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     df_layer["End date"] = end_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["Share link identifier"] = share_link_id
     df_layer["Name"] = "PARDUMP " + end_d.strftime("%Y-%m-%d")
-    df_layer["URL"] = "https://cocalc-www.createlab.org/pardumps/" + file_name + ".bin"
+    df_layer["URL"] = "https://cocalc-www.createlab.org/" + file_path + file_name + ".bin"
 
     # Create rows of share URLs
     et_root_url = "https://headless.earthtime.org/#"
@@ -481,7 +482,8 @@ def genetate_earthtime_data():
             redo = 0
         # IMPORTANT: for your application, change the prefix, otherwise your data will be mixed with others
         # IMPORTANT: if you do not want to visualize smell reports, set add_smell to False
-        dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, redo=redo, prefix="plume_", add_smell=True)
+        dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, redo=redo, prefix="plume_",
+                add_smell=True, file_path="pardumps/")
         if df_layer is None:
             df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
         else:
