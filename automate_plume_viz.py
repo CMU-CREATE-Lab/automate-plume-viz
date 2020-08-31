@@ -80,12 +80,16 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
 #   redo: this is a number to force the server to avoid using the cached file
 #   prefix: a prefix for the generated unique share url identifier in the EarthTime layers
 #   add_smell: a flag to control if you want to add the smell reports to the visualization
+#   lat: a string that indicates the latitude of the EarthTime base map
+#   lng: a string that indicates the longitude of the EarthTime base map
+#   zoom: a string that indicates the zoom level of the EarthTime base map
 # Output:
 #   df_layer: the pandas dataframe for the EarthTime layer document
 #   df_share_url: the pandas dataframe for the share urls
 #   df_img_url: the pandas dataframe for the thumbnail server urls to get images of video frames
 #   file_name: a list of file names
-def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0, prefix="banana_", add_smell=True):
+def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
+        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233"):
     if url_partition < 1:
         url_partition = 1
         print("Error! url_partition is less than 1. Set the url_partition to 1 to fix the error.")
@@ -105,7 +109,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0, pre
 
     # Create rows of share URLs
     et_root_url = "https://headless.earthtime.org/#"
-    et_part = "v=40.42532,-79.91643,9.233,latLng&ps=2400&startDwell=0&endDwell=0"
+    et_part = "v=%s,%s,%s,latLng&ps=2400&startDwell=0&endDwell=0" % (lat, lng, zoom)
     ts_root_url = "https://thumbnails-earthtime.cmucreatelab.org/thumbnail?"
     ts_part = "&width=%d&height=%d&format=zip&fps=30&tileFormat=mp4&startDwell=0&endDwell=0&fromScreenshot&disableUI&redo=%d" % (img_size, img_size, redo)
     share_url_ls = [] # EarthTime share urls
@@ -169,6 +173,9 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     print("start_time_eastern: %s" % start_time_eastern)
     print("o_file: %s" % o_file)
 
+    # Check and make sure that the o_file path is created
+    check_and_create_dir(o_file)
+
     # Run simulation and get the folder list (the generated files are cached)
     path_list = []
     for source in sources:
@@ -183,8 +190,9 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     # Save pdump text files (the generated files are cached)
     pdump_txt_list = []
     for folder in path_list:
-        if not findInFolder(folder,'PARDUMP*.txt'):
-            pdump = findInFolder(folder,'PARDUMP.*')
+        if not findInFolder(folder,"PARDUMP*.txt"):
+            pdump = findInFolder(folder, "PARDUMP.*")
+            #TODO: unzip PARDUMP gzip files
             cmd = "/opt/hysplit/exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
             if pdump.find('.txt') == -1:
                 pdump_txt_list.append(pdump+".txt")
@@ -220,6 +228,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         pdump_txt = findInFolder(folder,'PARDUMP*.txt')
         print("Remove file %s" % pdump_txt)
         os.remove(pdump_txt)
+        #TODO: gzip PARDUMP.* files
 
 
 # The parallel worker for simulation
