@@ -588,7 +588,7 @@ def generate_plume_viz_json(start_d, end_d):
         smell_counts = None
 
     # Create the json object (for front-end)
-    viz_json = {"columnNames": ["label", "color", "file_name"], "data": []}
+    viz_json = {"columnNames": ["label", "color", "file_name", "date"], "data": []}
     for d in sorted(end_d.to_pydatetime()):
         label = d.strftime("%b %d")
         if smell_counts is None:
@@ -596,10 +596,11 @@ def generate_plume_viz_json(start_d, end_d):
         else:
             color = smell_counts[d.strftime("%Y-%m-%d")]
         vid_fn = d.strftime("%Y%m%d")
+        date_str = d.strftime("%Y-%m-%d")
         vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
         if os.path.isfile(vid_path):
             # Only add to json if the file exists
-            viz_json["data"].append([label, color, vid_fn + ".mp4"])
+            viz_json["data"].append([label, color, vid_fn + ".mp4", date_str])
 
     # Save the json for the front-end visualization website
     p = "data/plume_viz.json"
