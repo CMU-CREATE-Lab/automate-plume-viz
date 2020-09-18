@@ -588,19 +588,19 @@ def generate_plume_viz_json(start_d, end_d):
         smell_counts = None
 
     # Create the json object (for front-end)
-    viz_json = {"columnNames": ["label", "color", "file_name", "date"], "data": []}
-    for d in sorted(end_d.to_pydatetime()):
-        label = d.strftime("%b %d")
-        if smell_counts is None:
-            color = -1
-        else:
-            color = smell_counts[d.strftime("%Y-%m-%d")]
-        vid_fn = d.strftime("%Y%m%d")
-        date_str = d.strftime("%Y-%m-%d")
-        vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
-        if os.path.isfile(vid_path):
-            # Only add to json if the file exists
-            viz_json["data"].append([label, color, vid_fn + ".mp4", date_str])
+    gp_end_d = end_d.groupby(end_d.year)
+    viz_json = {}
+    for k in gp_end_d:
+        g_json = {"columnNames": ["label", "color", "file_name", "date"], "data": []}
+        for d in sorted(gp_end_d[k].to_pydatetime()):
+            label = d.strftime("%b %d")
+            color = -1 if smell_counts is None else smell_counts[d.strftime("%Y-%m-%d")]
+            vid_fn = d.strftime("%Y%m%d")
+            vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
+            if os.path.isfile(vid_path):
+                # Only add to json if the file exists
+                g_json["data"].append([label, color, vid_fn + ".mp4", d.strftime("%Y-%m-%d")])
+        viz_json[k] = g_json
 
     # Save the json for the front-end visualization website
     p = "data/plume_viz.json"
