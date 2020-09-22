@@ -25,15 +25,15 @@ sh bg.sh python automate_plume_viz.py run_hysplit
 The above command uses the provided shell script "bg.sh" to run the code at the background, using [Screen](https://www.gnu.org/software/screen/manual/html_node/index.html). You can also use CoCalc interface to run the code, so that the program will not stop in the middle when you exit the terminal. If you use the provided shell script, here are some tips for the Screen command:
 ```sh
 # List currently running screen names
-sudo screen -ls
+screen -ls
 
 # Go into a screen
-sudo screen -x [NAME_FROM_ABOVE_COMMAND] (e.g. sudo screen -x 33186.download_videos)
+screen -x [NAME_FROM_ABOVE_COMMAND] (e.g. sudo screen -x 33186.download_videos)
 # Inside the screen, use CTRL+C to terminate the screen
 # Or use CTRL+A+D to detach the screen and send it to the background
 
 # Terminate all screens
-sudo screen -X quit
+screen -X quit
 
 # Keep looking at the screen log
 tail -f screenlog.0
