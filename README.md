@@ -18,12 +18,26 @@ To begin the pipeline, run the following command to generate the EarthTime layer
 ```sh
 python automate_plume_viz.py genetate_earthtime_data
 ```
-Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days).
+Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days). This command will run a [screen](https://www.gnu.org/software/screen/manual/html_node/index.html) at the background.
 ```sh
 sh bg.sh python automate_plume_viz.py run_hysplit
 ```
-The above command uses the provided shell script "bg.sh" to run the code at the background. You can also use CoCalc interface to run the code, so that the program will not stop in the middle when you exit the terminal.
+The above command uses the provided shell script "bg.sh" to run the code at the background, using [Screen](https://www.gnu.org/software/screen/manual/html_node/index.html). You can also use CoCalc interface to run the code, so that the program will not stop in the middle when you exit the terminal. If you use the provided shell script, here are some tips for the Screen command:
+```sh
+# List currently running screen names
+sudo screen -ls
 
+# Go into a screen
+sudo screen -x [NAME_FROM_ABOVE_COMMAND] (e.g. sudo screen -x 33186.download_videos)
+# Inside the screen, use CTRL+C to terminate the screen
+# Or use CTRL+A+D to detach the screen and send it to the background
+
+# Terminate all screens
+sudo screen -X quit
+
+# Keep looking at the screen log
+tail -f screenlog.0
+```
 Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days). Notice that if you forget to copy and paste the EarthTime layers, this step will fail.
 ```sh
 sh bg.sh python automate_plume_viz.py download_video_frames
