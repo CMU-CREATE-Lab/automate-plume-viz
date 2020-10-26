@@ -18,13 +18,12 @@ import shutil
 import cv2 as cv
 from PIL import Image, ImageFont, ImageDraw
 from pardumpdump_util import *
+from cached_hysplit_run_lib import *
+from utils import *
 
 
-o_root = "/projects/cocalc-www.createlab.org/pardumps/"
-
-
-# This is a utility function for running other ipython notebooks
 def exec_ipynb(filename_or_url):
+    """Load other ipython notebooks and import their functions"""
     nb = (requests.get(filename_or_url).json() if re.match(r'https?:', filename_or_url) else json.load(open(filename_or_url)))
     if(nb['nbformat'] >= 4):
         src = [''.join(cell['source']) for cell in nb['cells'] if cell['cell_type'] == 'code']
@@ -39,58 +38,70 @@ def exec_ipynb(filename_or_url):
     exec(code, globals())
 
 
-# Given starting and ending date string
-# Get a list of starting and ending datetime objects
-# Input:
-#   start_date_eastern: the date to start in EST time, e.g., "2019-01-01"
-#   end_date_eastern: the date to start in EST time, e.g., "2020-01-01"
-#   offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
-# Output:
-#   start_d: a pandas DatetimeIndex object, indicating the list of starting times
-#   end_d: a pandas DatetimeIndex object, indicating the list of ending times
 def get_start_end_time_list(start_date_eastern, end_date_eastern, offset_hours=3):
+    """
+    Given starting and ending date string, get a list of starting and ending datetime objects
+
+    Input:
+        start_date_eastern: the date to start in EST time, e.g., "2019-01-01"
+        end_date_eastern: the date to start in EST time, e.g., "2020-01-01"
+        offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
+
+    Output:
+        start_d: a pandas DatetimeIndex object, indicating the list of starting times
+        end_d: a pandas DatetimeIndex object, indicating the list of ending times
+    """
     offset_d = pd.Timedelta(offset_hours, unit="h")
     start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
     end_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="right", tz="US/Eastern") - offset_d
     return (start_d, end_d)
 
 
-# Convert lists of starting and ending date strings to objects
-# Input:
-#   start_date_str_list: a list of date strings, e.g., ["2019-04-23", "2019-12-22", "2020-02-05"]
-#   duration: the number of hours for each time range, e.g., 24
-#   offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
-# Output:
-#   start_d: a pandas DatetimeIndex object, indicating the list of starting times
-#   end_d: a pandas DatetimeIndex object, indicating the list of ending times
 def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
+    """
+    Convert lists of starting and ending date strings to objects
+
+    Input:
+        start_date_str_list: a list of date strings, e.g., ["2019-04-23", "2019-12-22", "2020-02-05"]
+        duration: the number of hours for each time range, e.g., 24
+        offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
+
+    Output:
+        start_d: a pandas DatetimeIndex object, indicating the list of starting times
+        end_d: a pandas DatetimeIndex object, indicating the list of ending times
+    """
     offset_d = pd.Timedelta(offset_hours, unit="h")
     start_d = pd.DatetimeIndex(data=start_date_str_list, tz="US/Eastern") - offset_d
     end_d = start_d + pd.Timedelta(duration, unit="h")
     return (start_d, end_d)
 
 
-# Generate the EarthTime layers and the thumbnail server urls
-# These urls can be called later to obtain video frames
-# Input:
-#   start_d: a pandas DatetimeIndex object, indicating the list of starting times
-#   end_d: a pandas DatetimeIndex object, indicating the list of ending times
-#   url_partition: the number of partitions for the thumbnail server request for getting images of video frames
-#   img_size: the size of the output video (e.g, 540 means 540px for both width and height)
-#   redo: this is a number to force the server to avoid using the cached file
-#   prefix: a prefix for the generated unique share url identifier in the EarthTime layers
-#   add_smell: a flag to control if you want to add the smell reports to the visualization
-#   lat: a string that indicates the latitude of the EarthTime base map
-#   lng: a string that indicates the longitude of the EarthTime base map
-#   zoom: a string that indicates the zoom level of the EarthTime base map
-#   file_path: a path to indicate that your hysplit bin files are under /projects/cocalc-www.createlab.org/[file_path]
-# Output:
-#   df_layer: the pandas dataframe for the EarthTime layer document
-#   df_share_url: the pandas dataframe for the share urls
-#   df_img_url: the pandas dataframe for the thumbnail server urls to get images of video frames
-#   file_name: a list of file names that are used for saving the hysplit bin files
 def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
         prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", file_path="test/"):
+    """
+    Generate the EarthTime layers and the thumbnail server urls that can be called later to obtain video frames
+
+    Input:
+        start_d: a pandas DatetimeIndex object, indicating the list of starting times
+        end_d: a pandas DatetimeIndex object, indicating the list of ending times
+        url_partition: the number of partitions for the thumbnail server request for getting images of video frames
+        img_size: the size of the output video (e.g, 540 means 540px for both width and height)
+        redo: this is a number to force the server to avoid using the cached file
+        prefix: a prefix for the generated unique share url identifier in the EarthTime layers
+        add_smell: a flag to control if you want to add the smell reports to the visualization
+        lat: a string that indicates the latitude of the EarthTime base map
+        lng: a string that indicates the longitude of the EarthTime base map
+        zoom: a string that indicates the zoom level of the EarthTime base map
+        file_path: a path to indicate that your hysplit bin files are under /projects/cocalc-www.createlab.org/[file_path]
+
+    Output:
+        df_layer: the pandas dataframe for the EarthTime layer document
+        df_share_url: the pandas dataframe for the share urls
+        df_img_url: the pandas dataframe for the thumbnail server urls to get images of video frames
+        file_name: a list of file names that are used for saving the hysplit bin files
+    """
+    # TODO: refactor file_path to be a complete path
+    # TODO: make https://cocalc-www.createlab.org/ an input argument
     if url_partition < 1:
         url_partition = 1
         print("Error! url_partition is less than 1. Set the url_partition to 1 to fix the error.")
@@ -118,7 +129,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     img_url_ls = [] # thumbnail server urls
     dt_img_url_ls = [] # the date of the thumbnail server urls
 
-    #TODO: for testing
+    #TODO: this part is for testing the new features that override the previous ones
     share_link_id += "_v2"
     df_layer["Share link identifier"] = share_link_id
     df_layer["Name"] += " v2"
@@ -160,15 +171,18 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     return (df_layer, df_share_url, df_img_url, file_name)
 
 
-# Run the HYSPLIT simulation
-# Input:
-#   start_time_eastern: for different dates, use format "2020-03-30 00:00"
-#   o_file: file path to save the simulation result, e.g., "/projects/cocalc-www.createlab.org/pardumps/test.bin"
-#   sources: location of the sources of pollution, in an array of DispersionSource objects
-#   emit_time_hrs: affects the emission time for running each Hysplit model
-#   duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
-#   filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
 def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8):
+    """
+    Run the HYSPLIT simulation
+
+    Input:
+        start_time_eastern: for different dates, use format "2020-03-30 00:00"
+        o_file: file path to save the simulation result, e.g., "/projects/cocalc-www.createlab.org/pardumps/test.bin"
+        sources: location of the sources of pollution, in an array of DispersionSource objects
+        emit_time_hrs: affects the emission time for running each Hysplit model
+        duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
+        filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
+    """
     print("="*100)
     print("="*100)
     print("start_time_eastern: %s" % start_time_eastern)
@@ -232,8 +246,8 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         #TODO: gzip PARDUMP.* files
 
 
-# The parallel worker for simulation
 def simulate_worker(start_time_eastern, o_file, sources):
+    """The parallel worker for simulation"""
     # Skip if the file exists
     if os.path.isfile(o_file):
         print("File already exists %s" % o_file)
@@ -248,14 +262,16 @@ def simulate_worker(start_time_eastern, o_file, sources):
         return False
 
 
-# Call the thumbnail server to generate and get video frames
-# Then save the video frames
-# Input:
-#   df_img_url: the pandas dataframe generated by using the generate_metadata function
-#   dir_p: the folder path for saving the files
-#   num_try: the number of times that the function has been called
-#   num_workers: the number of workers to download the frames (do not use more than 4)
 def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=4):
+    """
+    Call the thumbnail server to generate and get video frames, then save the video frames
+
+    Input:
+        df_img_url: the pandas dataframe generated by using the generate_metadata function
+        dir_p: the folder path for saving the files
+        num_try: the number of times that the function has been called
+        num_workers: the number of workers to download the frames (do not use more than 4)
+    """
     print("="*100)
     print("="*100)
     print("This function has been called for %d times." % num_try)
@@ -288,12 +304,15 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=4):
         print("DONE")
 
 
-# The worker for getting the video frames
-# Input:
-#   url: the url for getting the frames
-#   file_p: the path for saving the file
-#   idx: the index of the worker
 def urlretrieve_worker(url, file_p):
+    """
+    The worker for getting the video frames
+
+    Input:
+        url: the url for getting the frames
+        file_p: the path for saving the file
+        idx: the index of the worker
+    """
     time.sleep(1) # sleep to prevent calling the server too fast
     error = False
     if os.path.isfile(file_p): # skip if the file exists
@@ -310,8 +329,8 @@ def urlretrieve_worker(url, file_p):
     return error
 
 
-# Check if a directory exists, if not, create it
 def check_and_create_dir(path):
+    """Check if a directory exists, if not, create it"""
     if path is None: return
     dir_name = os.path.dirname(path)
     if dir_name != "" and not os.path.exists(dir_name):
@@ -322,12 +341,15 @@ def check_and_create_dir(path):
             print(ex)
 
 
-# Unzip the video frames and rename them to the correct datetime
-# Input:
-#   in_dir_p: path to the folder that has the zip file for one day's data
-#   out_dir_p: path to the folder that will store the output frames
-#   offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
 def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
+    """
+    Unzip the video frames and rename them to the correct datetime
+
+    Input:
+        in_dir_p: path to the folder that has the zip file for one day's data
+        out_dir_p: path to the folder that will store the output frames
+        offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
+    """
     # Compute the number of partitions
     num_partitions = 0
     for fn in get_all_file_names_in_folder(in_dir_p):
@@ -382,8 +404,8 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
     print("DONE")
 
 
-# Delete a directory and all its contents
 def del_dir(dir_p):
+    """Delete a directory and all its contents"""
     if not os.path.isdir(dir_p): return
     try:
         shutil.rmtree(dir_p)
@@ -391,24 +413,26 @@ def del_dir(dir_p):
         print(ex)
 
 
-# Return a list of all files in a folder
 def get_all_file_names_in_folder(path):
+    """Return a list of all files in a folder"""
     return [f for f in listdir(path) if isfile(join(path, f))]
 
 
-# Return a list of all directories in a folder
 def get_all_dir_names_in_folder(path):
+    """Return a list of all directories in a folder"""
     return [f for f in listdir(path) if isdir(join(path, f))]
 
 
-# Add caption to the images by its file name (epochtime)
-# Then merge these images into a video
-# Input:
-#   in_dir_p: path to the folder that contains video frames
-#   out_file_p: the path to the file that will store the video
-#   font_p: the path to the font file for the caption
-#   reduce_size: if True, will reduce file size using ffmpeg
 def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
+    """
+    Add caption to the images by its file name (epochtime), then merge these images into a video
+
+    Input:
+        in_dir_p: path to the folder that contains video frames
+        out_file_p: the path to the file that will store the video
+        font_p: the path to the font file for the caption
+        reduce_size: if True, will reduce file size using ffmpeg
+    """
     print("Process images in %r" % in_dir_p)
     out_file_p_tmp = out_file_p + ".mp4"
     time_list = []
@@ -512,7 +536,7 @@ def genetate_earthtime_data():
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
-def run_hysplit(start_d, file_name, num_workers=4):
+def run_hysplit(o_root, start_d, file_name, num_workers=4):
     print("Run Hysplit model...")
 
     # Location of the sources of pollution
@@ -537,7 +561,7 @@ def run_hysplit(start_d, file_name, num_workers=4):
     pool.join()
 
 
-def download_video_frames(df_share_url, df_img_url):
+def download_video_frames(o_root, df_share_url, df_img_url):
     print("Download video frames from the thumbnail server...")
 
     # Make sure that the dates have the hysplit simulation results
@@ -609,8 +633,8 @@ def generate_plume_viz_json(start_d, end_d):
     os.chmod(p, 0o777)
 
 
-# The main function
 def main(argv):
+    """The main function"""
     if len(argv) < 2:
         print("Usage:")
         print("python automate_plume_viz.py genetate_earthtime_data")
@@ -623,8 +647,11 @@ def main(argv):
         return
 
     program_start_time = time.time()
+    o_root = "/projects/cocalc-www.createlab.org/pardumps/"
 
-    load_utility()
+    # Load the utility functions
+    # NOTE: no need to run this function, as we now import .py scripts directly
+    #load_utility()
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
@@ -633,12 +660,12 @@ def main(argv):
 
     # Then run the following to create hysplit simulation files
     if argv[1] in ["run_hysplit", "pipeline"]:
-        run_hysplit(start_d, file_name)
+        run_hysplit(o_root, start_d, file_name)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
     if argv[1] in ["download_video_frames", "pipeline"]:
-        download_video_frames(df_share_url, df_img_url)
+        download_video_frames(o_root, df_share_url, df_img_url)
 
     # Then, rename files to epochtime
     if argv[1] in ["rename_video_frames", "pipeline"]:
