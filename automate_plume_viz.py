@@ -1,25 +1,18 @@
-import sys
-import os
-import importlib
-import re, array, csv, datetime, glob, json, math, random, stat
-import pytz, datetime
+import sys, os, re, datetime, json, pytz, subprocess, time, shutil, requests
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import urllib.parse
 import urllib.request
 from multiprocessing.dummy import Pool
-from itertools import product
-import time
 from os import listdir
 from os.path import isfile, join, isdir
 from zipfile import ZipFile
-import shutil
 import cv2 as cv
 from PIL import Image, ImageFont, ImageDraw
-from pardumpdump_util import *
-from cached_hysplit_run_lib import *
-from utils import *
+from utils import subprocess_check
+from pardumpdump_util import findInFolder, create_multisource_bin
+from cached_hysplit_run_lib import getMultiHourDispersionRunsParallel, parse_eastern, HysplitModelSettings, InitdModelType, DispersionSource
 
 
 def exec_ipynb(filename_or_url):
@@ -77,7 +70,8 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
 
 
 def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
-        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", file_path="test/"):
+        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233",
+        file_path="https://cocalc-www.createlab.org/test/"):
     """
     Generate the EarthTime layers and the thumbnail server urls that can be called later to obtain video frames
 
@@ -92,7 +86,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
         lat: a string that indicates the latitude of the EarthTime base map
         lng: a string that indicates the longitude of the EarthTime base map
         zoom: a string that indicates the zoom level of the EarthTime base map
-        file_path: a path to indicate that your hysplit bin files are under /projects/cocalc-www.createlab.org/[file_path]
+        file_path: an URL path to indicate the location of your hysplit bin files
 
     Output:
         df_layer: the pandas dataframe for the EarthTime layer document
@@ -100,8 +94,6 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
         df_img_url: the pandas dataframe for the thumbnail server urls to get images of video frames
         file_name: a list of file names that are used for saving the hysplit bin files
     """
-    # TODO: refactor file_path to be a complete path
-    # TODO: make https://cocalc-www.createlab.org/ an input argument
     if url_partition < 1:
         url_partition = 1
         print("Error! url_partition is less than 1. Set the url_partition to 1 to fix the error.")
@@ -117,7 +109,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     df_layer["End date"] = end_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["Share link identifier"] = share_link_id
     df_layer["Name"] = "PARDUMP " + end_d.strftime("%Y-%m-%d")
-    df_layer["URL"] = "https://cocalc-www.createlab.org/" + file_path + file_name + ".bin"
+    df_layer["URL"] = file_path + file_name + ".bin"
 
     # Create rows of share URLs
     et_root_url = "https://headless.earthtime.org/#"
@@ -129,7 +121,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     img_url_ls = [] # thumbnail server urls
     dt_img_url_ls = [] # the date of the thumbnail server urls
 
-    #TODO: this part is for testing the new features that override the previous ones
+    # NOTE: this part is for testing the new features that override the previous ones
     share_link_id += "_v2"
     df_layer["Share link identifier"] = share_link_id
     df_layer["Name"] += " v2"
@@ -221,7 +213,6 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     # Add color
     cmap = "viridis"
     c = plt.get_cmap(cmap)
-    c.colors
     colors = np.array(c.colors)
     colors *= 255
     colormap = np.uint8(colors.round())
@@ -475,7 +466,7 @@ def load_utility():
     os.chdir(root_dir + "automate-plume-viz/")
 
 
-def genetate_earthtime_data():
+def genetate_earthtime_data(o_url):
     print("Generate EarthTime data...")
 
     # Specify the dates that we want to process
@@ -507,7 +498,7 @@ def genetate_earthtime_data():
         # IMPORTANT: for your application, change the prefix, otherwise your data will be mixed with others
         # IMPORTANT: if you do not want to visualize smell reports, set add_smell to False
         dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, redo=redo, prefix="plume_",
-                add_smell=True, file_path="pardumps/")
+                add_smell=True, file_path=o_url)
         if df_layer is None:
             df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
         else:
@@ -556,7 +547,7 @@ def run_hysplit(o_root, start_d, file_name, num_workers=4):
     for i in range(len(o_file_all)):
         arg_list.append((start_time_eastern_all[i], o_file_all[i], sources))
     pool = Pool(num_workers)
-    result = pool.starmap(simulate_worker, arg_list)
+    pool.starmap(simulate_worker, arg_list)
     pool.close()
     pool.join()
 
@@ -647,7 +638,12 @@ def main(argv):
         return
 
     program_start_time = time.time()
+
+    # Specify the path on the server that stores the bin files
     o_root = "/projects/cocalc-www.createlab.org/pardumps/"
+
+    # Specify the URL for accessing the bin files
+    o_url = "https://cocalc-www.createlab.org/pardumps/"
 
     # Load the utility functions
     # NOTE: no need to run this function, as we now import .py scripts directly
@@ -655,7 +651,7 @@ def main(argv):
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
-    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data()
+    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(o_url)
     if argv[1] == "genetate_earthtime_data": return
 
     # Then run the following to create hysplit simulation files
