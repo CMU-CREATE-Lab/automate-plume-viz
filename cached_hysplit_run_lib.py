@@ -1,20 +1,19 @@
 """
-This code is taken from the following path on hal21 server (on Oct 26, 2020):
+This code was taken and edited from the following path on hal21 server (on Oct 26, 2020):
     /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/linRegModel/cachedHysplitRunLib.ipynb
 """
 
 
-import datetime, dateutil, enum, fcntl, hashlib, re, requests, io, json, os, threading, traceback, glob, gzip, shutil
+import sys, datetime, dateutil, enum, hashlib, io, os, threading, traceback, glob, gzip, shutil, subprocess
 from jinja2 import Template
-from sqlitedict import SqliteDict
-from filelock import Timeout, FileLock
-
-
-dispersionCachePath = '/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'
-easternTZ = dateutil.tz.gettz('America/New_York')
+from filelock import FileLock
+from utils import SimpleThreadPoolExecutor, download_file, subprocess_check
+import pandas as pd
+import numpy as np
 
 
 def parse_eastern(date):
+    easternTZ = dateutil.tz.gettz('America/New_York')
     return dateutil.parser.parse(date).replace(tzinfo=easternTZ)
 
 
@@ -136,7 +135,8 @@ class CachedDispersionRun:
         fileName -- file name of binary results file
     """
     def __init__(self, source, runStartLocal, emitTimeHrs, runTimeHrs, hysplitModelSettings,
-                 fileName='cdump', hysplitLoc='/opt/hysplit/exec/', verbose=False):
+                 fileName='cdump', hysplitLoc='/opt/hysplit/exec/', verbose=False,
+                 dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
         try:
             assert(source)
             self.source = source
@@ -189,8 +189,8 @@ class CachedDispersionRun:
         self.hysplitLoc = hysplitLoc
         self.runHr = int(runTimeHrs)
         self.runMin = int((runTimeHrs - int(runTimeHrs))*60)
-
         self.fNames = self.fetchWeatherFiles()
+        self.dispersionCachePath = dispersionCachePath
 
     def assertComplete(self):
         """Assert this run has all files associated with successful completion, e.g. cdump"""
@@ -322,7 +322,7 @@ class CachedDispersionRun:
 
     def path(self):
         """Compute cache pathname"""
-        return os.path.join(dispersionCachePath, self.localPath())
+        return os.path.join(self.dispersionCachePath, self.localPath())
 
     def shortPath(self):
         """
@@ -342,8 +342,7 @@ class CachedDispersionRun:
         ...on directories that have full minute-scale pardump
         """
         print('TODO: consider changing visualization code to no longer use settingsPath, and then delete this member fn')
-        return os.path.join(
-            dispersionCachePath,
+        return os.path.join(self.dispersionCachePath,
             '*/%s*_%gh_*_%g' % (self.runStartLocal.strftime('%Y%m%d'), self.emitTimeHrs, self.initdModelType.value))
 
     def cdumpPath(self):
@@ -509,7 +508,7 @@ class CachedDispersionRun:
         -z: Include zeros
         """
         hyString = self.hysplitLoc + ('con2asc -i%s -s -t -v -x -z' %name)
-        out = subprocess.run(hyString, cwd=(self.tmpPath()), shell=True)
+        subprocess.run(hyString, cwd=(self.tmpPath()), shell=True)
 
     def interpolate(self, cdumpFile, outputFile, stationFile):
         #subprocess_check('ls -l %s %s' % (cdumpFile, stationFile), verbose=True)
@@ -549,13 +548,15 @@ class CachedDispersionRun:
         return interpDat
 
 
-def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSettings,verbose=False):
+def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSettings,verbose=False,
+        dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
     run = CachedDispersionRun(
             source=source,
             runStartLocal=runStartLocal,
             emitTimeHrs=emitTimeHrs,
             runTimeHrs=runTimeHrs,
             hysplitModelSettings=hysplitModelSettings,
+            dispersionCachePath=dispersionCachePath,
             verbose=verbose
     )
     run.findOrRun()
@@ -564,7 +565,8 @@ def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSet
 
 
 def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRunTimeHrs,
-        hysplitModelSettings,backwardsHrs=0,resolutionHrs=1):
+        hysplitModelSettings,backwardsHrs=0,resolutionHrs=1,
+        dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
     # TODO: Change to only return
     # Only used for visualization (currently)
     # Use threading to produce collection of DispersionRuns over several hours for the same source
@@ -583,7 +585,8 @@ def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRun
             runStartLocal=hour,
             emitTimeHrs=emitTimeHrs,
             runTimeHrs=min(hysplitRunTimeHrs-(i*resolutionHrs),24),
-            hysplitModelSettings=hysplitModelSettings
+            hysplitModelSettings=hysplitModelSettings,
+            dispersionCachePath=dispersionCachePath
             )
         pool.submit(run.findOrRun)
     pathList = pool.shutdown()

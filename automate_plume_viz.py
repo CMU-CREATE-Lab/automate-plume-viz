@@ -1,3 +1,8 @@
+"""
+This is the main code base for automating the plume visualization using hysplit
+"""
+
+
 import sys, os, re, datetime, json, pytz, subprocess, time, shutil, requests
 import numpy as np
 import pandas as pd
@@ -70,8 +75,8 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
 
 
 def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
-        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233",
-        file_path="https://cocalc-www.createlab.org/test/"):
+        prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", credits="CREATE Lab",
+        category="Plume Viz", name_prefix="PARDUMP ", file_path="https://cocalc-www.createlab.org/test/"):
     """
     Generate the EarthTime layers and the thumbnail server urls that can be called later to obtain video frames
 
@@ -81,11 +86,14 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
         url_partition: the number of partitions for the thumbnail server request for getting images of video frames
         img_size: the size of the output video (e.g, 540 means 540px for both width and height)
         redo: this is a number to force the server to avoid using the cached file
-        prefix: a prefix for the generated unique share url identifier in the EarthTime layers
+        prefix: a string prefix for the generated unique share url identifier in the EarthTime layers
         add_smell: a flag to control if you want to add the smell reports to the visualization
         lat: a string that indicates the latitude of the EarthTime base map
         lng: a string that indicates the longitude of the EarthTime base map
         zoom: a string that indicates the zoom level of the EarthTime base map
+        credits: a string to fill out the "Credits" column in the output EarthTime layers file
+        category: a string to fill out the "Category" column in the output EarthTime layers file
+        name_prefix: a string predix for the "Name" column in the output EarthTime layers file
         file_path: an URL path to indicate the location of your hysplit bin files
 
     Output:
@@ -102,14 +110,15 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     df_template = pd.read_csv("data/earth_time_layer_template.csv")
     df_layer = pd.concat([df_template]*len(start_d), ignore_index=True)
     file_name = prefix + end_d.strftime("%Y%m%d")
-    share_link_id = file_name
     start_d_utc = start_d.tz_convert("UTC")
     end_d_utc = end_d.tz_convert("UTC")
     df_layer["Start date"] = start_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["End date"] = end_d_utc.strftime("%Y%m%d%H%M%S")
-    df_layer["Share link identifier"] = share_link_id
-    df_layer["Name"] = "PARDUMP " + end_d.strftime("%Y-%m-%d")
+    df_layer["Share link identifier"] = file_name
+    df_layer["Name"] = name_prefix + end_d.strftime("%Y-%m-%d")
     df_layer["URL"] = file_path + file_name + ".bin"
+    df_layer["Category"] = category
+    df_layer["Credits"] = credits
 
     # Create rows of share URLs
     et_root_url = "https://headless.earthtime.org/#"
@@ -122,9 +131,6 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     dt_img_url_ls = [] # the date of the thumbnail server urls
 
     # NOTE: this part is for testing the new features that override the previous ones
-    share_link_id += "_v2"
-    df_layer["Share link identifier"] = share_link_id
-    df_layer["Name"] += " v2"
     df_layer["Vertex Shader"] = "WebGLVectorTile2.particleAltFadeVertexShader"
     df_layer["Fragment Shader"] = "WebGLVectorTile2.particleAltFadeFragmentShader"
     et_root_url = "https://headless-rsargent.earthtime.org/#"
@@ -139,9 +145,9 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
         bt = "bt=" + sdt_str + "&"
         et = "et=" + edt_str + "&"
         if add_smell:
-            l = "l=bdrk_detailed,smell_my_city_pgh_reports_top," + share_link_id[i] + "&"
+            l = "l=bdrk_detailed,smell_my_city_pgh_reports_top," + file_name[i] + "&"
         else:
-            l = "l=bdrk_detailed," + share_link_id[i] + "&"
+            l = "l=bdrk_detailed," + file_name[i] + "&"
         share_url_ls.append(et_root_url + l + bt + et + et_part)
         dt_share_url_ls.append(date_str)
         # Add the thumbnail server url
@@ -163,7 +169,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     return (df_layer, df_share_url, df_img_url, file_name)
 
 
-def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8):
+def simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, duration=24, filter_ratio=0.8):
     """
     Run the HYSPLIT simulation
 
@@ -171,6 +177,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         start_time_eastern: for different dates, use format "2020-03-30 00:00"
         o_file: file path to save the simulation result, e.g., "/projects/cocalc-www.createlab.org/pardumps/test.bin"
         sources: location of the sources of pollution, in an array of DispersionSource objects
+        cache_path: the path on the server to store the cached hysplit data
         emit_time_hrs: affects the emission time for running each Hysplit model
         duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
         filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
@@ -191,7 +198,8 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
                 parse_eastern(start_time_eastern),
                 emit_time_hrs,
                 duration,
-                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False))
+                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False),
+                dispersionCachePath=cache_path)
     print("len(path_list)=%d" % len(path_list))
 
     # Save pdump text files (the generated files are cached)
@@ -237,7 +245,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         #TODO: gzip PARDUMP.* files
 
 
-def simulate_worker(start_time_eastern, o_file, sources):
+def simulate_worker(start_time_eastern, o_file, sources, cache_path):
     """The parallel worker for simulation"""
     # Skip if the file exists
     if os.path.isfile(o_file):
@@ -246,7 +254,7 @@ def simulate_worker(start_time_eastern, o_file, sources):
 
     # HYSPLIT Simulation
     try:
-        simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8)
+        simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, duration=24, filter_ratio=0.8)
         return True
     except Exception as ex:
         print("\t{%s} %s\n" % (ex, o_file))
@@ -473,17 +481,17 @@ def genetate_earthtime_data(o_url):
     date_list = []
 
     # Date batch
-    #start_d_str_list = ["2020-02-03", "2020-02-06", "2020-02-17", "2020-02-23", "2020-02-24"]
-    #date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
+    start_d_str_list = ["2019-02-03", "2019-02-04"]
+    date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Date batch 1
-    date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
+    #date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
 
     # Date batch 2
-    date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
+    #date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
 
     # Date batch 3
-    date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
+    #date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
@@ -497,8 +505,9 @@ def genetate_earthtime_data(o_url):
             redo = 0
         # IMPORTANT: for your application, change the prefix, otherwise your data will be mixed with others
         # IMPORTANT: if you do not want to visualize smell reports, set add_smell to False
-        dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, redo=redo, prefix="plume_",
-                add_smell=True, file_path=o_url)
+        dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, img_size=540, redo=redo, prefix="plume_",
+                add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", credits="CREATE Lab",
+                category="Plume Viz", name_prefix="PARDUMP ", file_path=o_url)
         if df_layer is None:
             df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
         else:
@@ -527,7 +536,7 @@ def genetate_earthtime_data(o_url):
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
-def run_hysplit(o_root, start_d, file_name, num_workers=4):
+def run_hysplit(o_root, start_d, file_name, cache_path, num_workers=4):
     print("Run Hysplit model...")
 
     # Location of the sources of pollution
@@ -545,7 +554,7 @@ def run_hysplit(o_root, start_d, file_name, num_workers=4):
     # Run the simulation for each date in parallel (be aware of the memory usage)
     arg_list = []
     for i in range(len(o_file_all)):
-        arg_list.append((start_time_eastern_all[i], o_file_all[i], sources))
+        arg_list.append((start_time_eastern_all[i], o_file_all[i], sources, cache_path))
     pool = Pool(num_workers)
     pool.starmap(simulate_worker, arg_list)
     pool.close()
@@ -645,6 +654,9 @@ def main(argv):
     # Specify the URL for accessing the bin files
     o_url = "https://cocalc-www.createlab.org/pardumps/"
 
+    # Specify the path to cache the hysplit data
+    cache_path = "/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache"
+
     # Load the utility functions
     # NOTE: no need to run this function, as we now import .py scripts directly
     #load_utility()
@@ -656,7 +668,7 @@ def main(argv):
 
     # Then run the following to create hysplit simulation files
     if argv[1] in ["run_hysplit", "pipeline"]:
-        run_hysplit(o_root, start_d, file_name)
+        run_hysplit(o_root, start_d, file_name, cache_path)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
