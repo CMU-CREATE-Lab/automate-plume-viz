@@ -5,8 +5,8 @@ This code was taken and edited from the following path on hal21 server (on Oct 2
 """
 
 
-import concurrent, concurrent.futures, datetime, math, shutil, subprocess, sys, time
-
+import os, requests, concurrent, concurrent.futures, datetime, math, shutil, subprocess, sys, time, traceback
+from requests.exceptions import RequestException
 try:
     import dateutil, dateutil.tz
 except:
@@ -131,7 +131,7 @@ class SimpleThreadPoolExecutor(concurrent.futures.ThreadPoolExecutor):
         for completed in concurrent.futures.as_completed(self.futures):
             try:
                 results.append(completed.result())
-            except Exception as e:
+            except Exception:
                 exception_count += 1
                 sys.stderr.write(
                     'Exception caught in SimpleThreadPoolExecutor.shutdown.  Continuing until all are finished.\n' +
@@ -163,7 +163,7 @@ class SimpleProcessPoolExecutor(concurrent.futures.ProcessPoolExecutor):
         for completed in concurrent.futures.as_completed(self.futures):
             try:
                 results.append(completed.result())
-            except Exception as e:
+            except Exception:
                 exception_count += 1
                 sys.stderr.write(
                     'Exception caught in SimpleProcessPoolExecutor.shutdown.  Continuing until all are finished.\n' +
@@ -273,7 +273,7 @@ class StatInstance:
                 sys.stderr.write('POST to https://stat.createlab.org/api/log failed with status code %d and response %s' % (response.status_code, response.text))
                 sys.stderr.flush()
                 return
-        except requests.exceptions.RequestException:
+        except RequestException:
             sys.stderr.write('POST to https://stat.createlab.org/api/log timed out')
             sys.stderr.flush()
 

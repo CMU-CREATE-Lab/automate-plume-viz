@@ -138,6 +138,7 @@ class CachedDispersionRun:
                  fileName='cdump', hysplitLoc='/opt/hysplit/exec/', verbose=False,
                  dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
         try:
+            self.dispersionCachePath = dispersionCachePath
             assert(source)
             self.source = source
 
@@ -175,7 +176,6 @@ class CachedDispersionRun:
                         sys.stdout.write('CachedDispersionRun -- found minutely pardump version, overriding hourlyPardump to be False\n')
                 else:
                     self.hourlyPardump = True
-
         except AssertionError:
             _, _, tb = sys.exc_info()
             traceback.print_tb(tb) # Fixed format
@@ -190,7 +190,6 @@ class CachedDispersionRun:
         self.runHr = int(runTimeHrs)
         self.runMin = int((runTimeHrs - int(runTimeHrs))*60)
         self.fNames = self.fetchWeatherFiles()
-        self.dispersionCachePath = dispersionCachePath
 
     def assertComplete(self):
         """Assert this run has all files associated with successful completion, e.g. cdump"""
