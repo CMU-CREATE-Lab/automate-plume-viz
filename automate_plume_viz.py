@@ -486,13 +486,13 @@ def genetate_earthtime_data(o_url):
     date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Date batch 1
-    date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
+    #date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
 
     # Date batch 2
-    date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
+    #date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
 
     # Date batch 3
-    date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
+    #date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
@@ -659,7 +659,7 @@ def main(argv):
     o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/"
 
     # Specify the path to cache the hysplit data
-    cache_path = "/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache"
+    cache_path = "/projects/earthtime/air-src/linRegModel/dispersionCache"
 
     # Load the utility functions
     # NOTE: no need to run this function, as we now import .py scripts directly
