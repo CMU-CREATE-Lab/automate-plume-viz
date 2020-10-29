@@ -653,9 +653,8 @@ def main(argv):
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
-    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(o_url)
-    if argv[1] == "genetate_earthtime_data":
-        return
+    if argv[1] in ["genetate_earthtime_data", "pipeline"]:
+        start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(o_url)
 
     # Then run the following to create hysplit simulation files
     if argv[1] in ["run_hysplit", "pipeline"]:
