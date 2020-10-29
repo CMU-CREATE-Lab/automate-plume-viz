@@ -232,6 +232,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     print("Creating %s" % o_file)
     create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_ratio=filter_ratio)
     print("Created %s" % o_file)
+    os.chmod(o_file, 0o777)
 
     # Cleanup files
     print("Cleaning files...")
@@ -335,6 +336,7 @@ def urlretrieve_worker(url, file_p):
     try:
         print("\t{Request} %s\n" % url)
         urllib.request.urlretrieve(url, file_p)
+        os.chmod(file_p, 0o777)
         print("\t{Done} %s\n" % url)
     except Exception:
         traceback.print_exc()
@@ -349,6 +351,7 @@ def check_and_create_dir(path):
     if dir_name != "" and not os.path.exists(dir_name):
         try: # this is used to prevent race conditions during parallel computing
             os.makedirs(dir_name)
+            os.chmod(dir_name, 0o777)
         except Exception:
             traceback.print_exc()
 
@@ -383,6 +386,9 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
         print("Extract " + p_zip + " to " + p_unzip)
         with ZipFile(p_zip, "r") as zip_obj:
             zip_obj.extractall(p_unzip)
+            os.chmod(p_unzip, 0o777)
+            for dn in get_all_dir_names_in_folder(p_unzip):
+                os.chmod(p_unzip + dn, 0o777)
             # Count the number of png files
             fn_list = get_all_file_names_in_folder(p_unzip + "frames/")
             if num_files_per_partition == 0:
@@ -407,6 +413,11 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
         for fn in get_all_file_names_in_folder(p):
             os.rename(p + fn, out_dir_p + fn)
         del_dir(in_dir_p + str(i))
+
+    # Set permissions
+        for fn in get_all_file_names_in_folder(out_dir_p):
+            os.chmod(out_dir_p + fn, 0o777)
+
     print("DONE")
 
 
@@ -466,6 +477,7 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
         os.remove(out_file_p_tmp)
     else:
         os.rename(out_file_p_tmp, out_file_p)
+    os.chmod(out_file_p, 0o777)
     print("DONE saving video to %r" % out_file_p)
 
 
@@ -516,14 +528,17 @@ def genetate_earthtime_data(o_url):
     # Save rows of EarthTime CSV layers to a file
     p = "data/earth_time_layer.csv"
     df_layer.to_csv(p, index=False)
+    os.chmod(p, 0o777)
 
     # Save rows of share urls to a file
     p = "data/earth_time_share_urls.csv"
     df_share_url.to_csv(p, index=False)
+    os.chmod(p, 0o777)
 
     # Save rows of thumbnail server urls to a file
     p = "data/earth_time_thumbnail_urls.csv"
     df_img_url.to_csv(p, index=False)
+    os.chmod(p, 0o777)
 
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
@@ -628,6 +643,7 @@ def generate_plume_viz_json(start_d, end_d):
     p = "data/plume_viz.json"
     with open(p, "w") as f:
         json.dump(viz_json, f)
+    os.chmod(p, 0o777)
 
 
 def main(argv):
