@@ -54,11 +54,11 @@ sh bg.sh python automate_plume_viz.py create_all_videos
 ```
 After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access. If you process the data on the hal21 server, use the following command:
 ```sh
-cp /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
+cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 If you process the data on other servers, you need to rsync the data back to the hal21 server. On your server, run the following:
 ```sh
-rsync -av [PATH]/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
+rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
 ```sh
