@@ -380,6 +380,7 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
                     if "frame" in fn and ".png" in fn:
                         num_files_per_partition += 1
             # Loop and rename the files
+            assert(num_files_per_partition - 1 > 0),"Number of files per partition needs to be more than 1"
             time_span_frame = pd.Timedelta(time_span/(num_files_per_partition - 1), unit="h")
             for fn in fn_list:
                 frame_number = int(re.findall(r"\d{6}", fn)[0]) - 1
@@ -481,8 +482,8 @@ def genetate_earthtime_data(o_url):
     date_list = []
 
     # Date batch
-    #start_d_str_list = ["2019-02-03", "2019-02-04"]
-    #date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
+    start_d_str_list = ["2019-03-01", "2019-03-02"]
+    date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Date batch 1
     date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
@@ -578,7 +579,10 @@ def rename_video_frames():
     # For each date, unzip and rename the video frames
     for dn in get_all_dir_names_in_folder("data/rgb/"):
         in_dir_p = "data/rgb/" + dn + "/"
-        unzip_and_rename(in_dir_p, in_dir_p+"frames/", offset_hours=3)
+        try:
+            unzip_and_rename(in_dir_p, in_dir_p+"frames/", offset_hours=3)
+        except Exception as ex:
+            print(ex)
 
 
 def create_all_videos():
@@ -664,7 +668,8 @@ def main(argv):
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
     start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(o_url)
-    if argv[1] == "genetate_earthtime_data": return
+    if argv[1] == "genetate_earthtime_data":
+        return
 
     # Then run the following to create hysplit simulation files
     if argv[1] in ["run_hysplit", "pipeline"]:
