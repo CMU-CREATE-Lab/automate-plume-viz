@@ -1,6 +1,6 @@
 """
 This code was taken and edited from the following path on hal21 server (on Oct 26, 2020):
-    /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/linRegModel/cachedHysplitRunLib.ipynb
+    /projects/earthtime/files/air-src/linRegModel/cachedHysplitRunLib.ipynb
 """
 
 
@@ -136,9 +136,12 @@ class CachedDispersionRun:
     """
     def __init__(self, source, runStartLocal, emitTimeHrs, runTimeHrs, hysplitModelSettings,
                  fileName='cdump', hysplitLoc='/opt/hysplit/exec/', verbose=False,
-                 dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
+                 dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
+                 hrrrDirPath='/projects/earthtime/air-data/hrrr'):
         try:
             self.dispersionCachePath = dispersionCachePath
+            self.hrrrDirPath = hrrrDirPath
+
             assert(source)
             self.source = source
 
@@ -393,7 +396,7 @@ class CachedDispersionRun:
             os.unlink(psPath)
 
     def fetchWeatherFiles(self):
-        hrrrDir = os.path.abspath('/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-data/hrrr')
+        hrrrDir = os.path.abspath(self.hrrrDirPath)
         fNames = []
         # Date when NOAA archive format changed
         isReformat = self.runStartUtc > datetime.datetime(2019,7,22,0,0,0,0,dateutil.tz.tzutc())
@@ -548,7 +551,8 @@ class CachedDispersionRun:
 
 
 def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSettings,verbose=False,
-        dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
+        dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
+        hrrrDirPath='/projects/earthtime/air-data/hrrr'):
     run = CachedDispersionRun(
             source=source,
             runStartLocal=runStartLocal,
@@ -556,6 +560,7 @@ def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSet
             runTimeHrs=runTimeHrs,
             hysplitModelSettings=hysplitModelSettings,
             dispersionCachePath=dispersionCachePath,
+            hrrrDirPath=hrrrDirPath,
             verbose=verbose
     )
     run.findOrRun()
@@ -565,7 +570,8 @@ def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSet
 
 def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRunTimeHrs,
         hysplitModelSettings,backwardsHrs=0,resolutionHrs=1,
-        dispersionCachePath='/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache'):
+        dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
+        hrrrDirPath='/projects/earthtime/air-data/hrrr'):
     # TODO: Change to only return
     # Only used for visualization (currently)
     # Use threading to produce collection of DispersionRuns over several hours for the same source
@@ -585,7 +591,8 @@ def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRun
             emitTimeHrs=emitTimeHrs,
             runTimeHrs=min(hysplitRunTimeHrs-(i*resolutionHrs),24),
             hysplitModelSettings=hysplitModelSettings,
-            dispersionCachePath=dispersionCachePath
+            dispersionCachePath=dispersionCachePath,
+            hrrrDirPath=hrrrDirPath
             )
         pool.submit(run.findOrRun)
     pathList = pool.shutdown()

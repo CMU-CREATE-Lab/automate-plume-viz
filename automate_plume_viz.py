@@ -3,7 +3,7 @@ This is the main code base for automating the plume visualization using hysplit
 """
 
 
-import sys, os, re, datetime, json, pytz, subprocess, time, shutil, requests
+import sys, os, re, datetime, json, pytz, subprocess, time, shutil, requests, traceback
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -169,7 +169,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     return (df_layer, df_share_url, df_img_url, file_name)
 
 
-def simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, duration=24, filter_ratio=0.8):
+def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8):
     """
     Run the HYSPLIT simulation
 
@@ -177,7 +177,6 @@ def simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, d
         start_time_eastern: for different dates, use format "2020-03-30 00:00"
         o_file: file path to save the simulation result, e.g., "/projects/cocalc-www.createlab.org/pardumps/test.bin"
         sources: location of the sources of pollution, in an array of DispersionSource objects
-        cache_path: the path on the server to store the cached hysplit data
         emit_time_hrs: affects the emission time for running each Hysplit model
         duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
         filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
@@ -198,8 +197,7 @@ def simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, d
                 parse_eastern(start_time_eastern),
                 emit_time_hrs,
                 duration,
-                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False),
-                dispersionCachePath=cache_path)
+                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False))
     print("len(path_list)=%d" % len(path_list))
 
     # Save pdump text files (the generated files are cached)
@@ -234,7 +232,6 @@ def simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, d
     print("Creating %s" % o_file)
     create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_ratio=filter_ratio)
     print("Created %s" % o_file)
-    os.chmod(o_file, 0o777)
 
     # Cleanup files
     print("Cleaning files...")
@@ -245,19 +242,37 @@ def simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, d
         #TODO: gzip PARDUMP.* files
 
 
-def simulate_worker(start_time_eastern, o_file, sources, cache_path):
+def is_url_valid(url):
+    """Check if the url is valid (has something)"""
+    try:
+        r = requests.head(url)
+        return r.status_code == requests.codes.ok
+    except Exception:
+        traceback.print_exc()
+        return False
+
+
+def simulate_worker(start_time_eastern, o_file, sources, o_url):
     """The parallel worker for simulation"""
-    # Skip if the file exists
+    # Skip if the file exists in local
     if os.path.isfile(o_file):
-        print("File already exists %s" % o_file)
+        print("File exists in local %s" % o_file)
+        return True
+
+    # Skip if the file exists in remote
+    if is_url_valid(o_url):
+        print("File exists in remote %s" % o_url)
         return True
 
     # HYSPLIT Simulation
     try:
-        simulate(start_time_eastern, o_file, sources, cache_path, emit_time_hrs=1, duration=24, filter_ratio=0.8)
+        simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8)
         return True
-    except Exception as ex:
-        print("\t{%s} %s\n" % (ex, o_file))
+    except Exception:
+        print("-"*60)
+        print("Error when creating %s" % o_file)
+        traceback.print_exc()
+        print("-"*60)
         return False
 
 
@@ -320,10 +335,9 @@ def urlretrieve_worker(url, file_p):
     try:
         print("\t{Request} %s\n" % url)
         urllib.request.urlretrieve(url, file_p)
-        os.chmod(file_p, 0o777)
         print("\t{Done} %s\n" % url)
-    except Exception as ex:
-        print("\t{%s} %s\n" % (ex, url))
+    except Exception:
+        traceback.print_exc()
         error = True
     return error
 
@@ -335,9 +349,8 @@ def check_and_create_dir(path):
     if dir_name != "" and not os.path.exists(dir_name):
         try: # this is used to prevent race conditions during parallel computing
             os.makedirs(dir_name)
-            os.chmod(dir_name, 0o777)
-        except Exception as ex:
-            print(ex)
+        except Exception:
+            traceback.print_exc()
 
 
 def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
@@ -370,9 +383,6 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
         print("Extract " + p_zip + " to " + p_unzip)
         with ZipFile(p_zip, "r") as zip_obj:
             zip_obj.extractall(p_unzip)
-            os.chmod(p_unzip, 0o777)
-            for dn in get_all_dir_names_in_folder(p_unzip):
-                os.chmod(p_unzip + dn, 0o777)
             # Count the number of png files
             fn_list = get_all_file_names_in_folder(p_unzip + "frames/")
             if num_files_per_partition == 0:
@@ -397,10 +407,6 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
         for fn in get_all_file_names_in_folder(p):
             os.rename(p + fn, out_dir_p + fn)
         del_dir(in_dir_p + str(i))
-
-    # Set permissions
-    for fn in get_all_file_names_in_folder(out_dir_p):
-        os.chmod(out_dir_p + fn, 0o777)
     print("DONE")
 
 
@@ -409,8 +415,8 @@ def del_dir(dir_p):
     if not os.path.isdir(dir_p): return
     try:
         shutil.rmtree(dir_p)
-    except Exception as ex:
-        print(ex)
+    except Exception:
+        traceback.print_exc()
 
 
 def get_all_file_names_in_folder(path):
@@ -460,19 +466,7 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
         os.remove(out_file_p_tmp)
     else:
         os.rename(out_file_p_tmp, out_file_p)
-    os.chmod(out_file_p, 0o777)
     print("DONE saving video to %r" % out_file_p)
-
-
-def load_utility():
-    print("Load utility functions...")
-
-    # Load utility functions from another ipython notebook
-    root_dir = "/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/"
-    os.chdir(root_dir + "linRegModel")
-    exec_ipynb("./cachedHysplitRunLib.ipynb")
-    exec_ipynb("../../src/python-utils/utils.ipynb")
-    os.chdir(root_dir + "automate-plume-viz/")
 
 
 def genetate_earthtime_data(o_url):
@@ -482,7 +476,7 @@ def genetate_earthtime_data(o_url):
     date_list = []
 
     # Date batch
-    start_d_str_list = ["2019-03-01", "2019-03-02"]
+    start_d_str_list = ["2019-03-05", "2019-03-06"]
     date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Date batch 1
@@ -522,23 +516,22 @@ def genetate_earthtime_data(o_url):
     # Save rows of EarthTime CSV layers to a file
     p = "data/earth_time_layer.csv"
     df_layer.to_csv(p, index=False)
-    os.chmod(p, 0o777)
 
     # Save rows of share urls to a file
     p = "data/earth_time_share_urls.csv"
     df_share_url.to_csv(p, index=False)
-    os.chmod(p, 0o777)
 
     # Save rows of thumbnail server urls to a file
     p = "data/earth_time_thumbnail_urls.csv"
     df_img_url.to_csv(p, index=False)
-    os.chmod(p, 0o777)
 
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
-def run_hysplit(o_root, start_d, file_name, cache_path, num_workers=4):
+def run_hysplit(o_root, start_d, file_name, o_url, num_workers=4):
     print("Run Hysplit model...")
+
+    check_and_create_dir(o_root)
 
     # Location of the sources of pollution
     # IMPORTANT: for your application, change these pollution sources
@@ -551,11 +544,12 @@ def run_hysplit(o_root, start_d, file_name, cache_path, num_workers=4):
     # Prepare the list of dates for running the simulation
     start_time_eastern_all = start_d.strftime("%Y-%m-%d %H:%M").values
     o_file_all = o_root + file_name.values + ".bin"
+    o_url_all = o_url + file_name.values + ".bin"
 
     # Run the simulation for each date in parallel (be aware of the memory usage)
     arg_list = []
     for i in range(len(o_file_all)):
-        arg_list.append((start_time_eastern_all[i], o_file_all[i], sources, cache_path))
+        arg_list.append((start_time_eastern_all[i], o_file_all[i], sources, o_url_all[i]))
     pool = Pool(num_workers)
     pool.starmap(simulate_worker, arg_list)
     pool.close()
@@ -581,8 +575,8 @@ def rename_video_frames():
         in_dir_p = "data/rgb/" + dn + "/"
         try:
             unzip_and_rename(in_dir_p, in_dir_p+"frames/", offset_hours=3)
-        except Exception as ex:
-            print(ex)
+        except Exception:
+            traceback.print_exc()
 
 
 def create_all_videos():
@@ -611,8 +605,8 @@ def generate_plume_viz_json(start_d, end_d):
         response = urllib.request.urlopen(smell_pgh_api_url)
         smell_counts = json.load(response)
         print("\t{Done} %s\n" % smell_pgh_api_url)
-    except Exception as ex:
-        print("\t{%s} %s\n" % (ex, smell_pgh_api_url))
+    except Exception:
+        traceback.print_exc()
         smell_counts = None
 
     # Create the json object (for front-end)
@@ -634,7 +628,6 @@ def generate_plume_viz_json(start_d, end_d):
     p = "data/plume_viz.json"
     with open(p, "w") as f:
         json.dump(viz_json, f)
-    os.chmod(p, 0o777)
 
 
 def main(argv):
@@ -653,17 +646,10 @@ def main(argv):
     program_start_time = time.time()
 
     # Specify the path on the server that stores the bin files
-    o_root = "/projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/"
+    o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/"
 
     # Specify the URL for accessing the bin files
     o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/"
-
-    # Specify the path to cache the hysplit data
-    cache_path = "/projects/earthtime/air-src/linRegModel/dispersionCache"
-
-    # Load the utility functions
-    # NOTE: no need to run this function, as we now import .py scripts directly
-    #load_utility()
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
@@ -673,7 +659,7 @@ def main(argv):
 
     # Then run the following to create hysplit simulation files
     if argv[1] in ["run_hysplit", "pipeline"]:
-        run_hysplit(o_root, start_d, file_name, cache_path)
+        run_hysplit(o_root, start_d, file_name, o_url)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail

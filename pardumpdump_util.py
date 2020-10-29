@@ -1,7 +1,7 @@
 """
 This is the utility function for automating plume visualization
 This code was taken and edited from the following path on the hal21 server:
-    /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/linRegModel/pardump_example/pardumpdump-randy-amy-util.ipynb
+    /projects/earthtime/files/air-src/linRegModel/pardump_example/pardumpdump-randy-amy-util.ipynb
 """
 
 

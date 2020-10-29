@@ -1,7 +1,7 @@
 """
 Utility functions for automate-plume-viz
 This code was taken and edited from the following path on hal21 server (on Oct 26, 2020):
-    /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/src/python-utils/utils.ipynb
+    /projects/earthtime/files/src/python-utils/utils.ipynb
 """
 
 
