@@ -1,6 +1,6 @@
 *.ipynb.sage-jupyter2
 *.DS_Store
-data/
+data/*
 !data/font/
 !data/earth_time_layer_template.csv
 *.html
