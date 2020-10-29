@@ -653,10 +653,10 @@ def main(argv):
     program_start_time = time.time()
 
     # Specify the path on the server that stores the bin files
-    o_root = "/projects/cocalc-www.createlab.org/pardumps/"
+    o_root = "/projects/cocalc-www.createlab.org/pardumps/plumeviz/"
 
     # Specify the URL for accessing the bin files
-    o_url = "https://cocalc-www.createlab.org/pardumps/"
+    o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/"
 
     # Specify the path to cache the hysplit data
     cache_path = "/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/linRegModel/dispersionCache"
