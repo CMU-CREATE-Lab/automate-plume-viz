@@ -188,13 +188,13 @@ def main(argv):
     """The main function"""
     if len(argv) < 2:
         print("Usage:")
-        print("python automate_plume_viz.py genetate_earthtime_data")
-        print("python automate_plume_viz.py run_hysplit")
-        print("python automate_plume_viz.py download_video_frames")
-        print("python automate_plume_viz.py rename_video_frames")
-        print("python automate_plume_viz.py create_all_videos")
-        print("python automate_plume_viz.py generate_plume_viz_json")
-        print("python automate_plume_viz.py pipeline")
+        print("python main.py genetate_earthtime_data")
+        print("python main.py run_hysplit")
+        print("python main.py download_video_frames")
+        print("python main.py rename_video_frames")
+        print("python main.py create_all_videos")
+        print("python main.py generate_plume_viz_json")
+        print("python main.py pipeline")
         return
 
     program_start_time = time.time()
