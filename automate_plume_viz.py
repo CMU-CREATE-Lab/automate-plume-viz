@@ -205,7 +205,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     for folder in path_list:
         if not findInFolder(folder,"PARDUMP*.txt"):
             pdump = findInFolder(folder, "PARDUMP.*")
-            #TODO: unzip PARDUMP gzip files
+            # TODO: unzip PARDUMP gzip files
             cmd = "/opt/hysplit/exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
             if pdump.find('.txt') == -1:
                 pdump_txt_list.append(pdump+".txt")
@@ -240,7 +240,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         pdump_txt = findInFolder(folder,'PARDUMP*.txt')
         print("Remove file %s" % pdump_txt)
         os.remove(pdump_txt)
-        #TODO: gzip PARDUMP.* files
+        # TODO: gzip PARDUMP.* files
 
 
 def is_url_valid(url):
@@ -261,11 +261,14 @@ def simulate_worker(start_time_eastern, o_file, sources, o_url):
         return True
 
     # Skip if the file exists in remote
+    # IMPORTANT: if you are doing experiments on the particle files,
+    # ...make sure you comment out the following few lines that skip processing,
+    # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
     if is_url_valid(o_url):
         print("File exists in remote %s" % o_url)
         return True
 
-    # HYSPLIT Simulation
+    # Perform HYSPLIT model simulation
     try:
         simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8)
         return True
@@ -484,20 +487,11 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
 def genetate_earthtime_data(o_url):
     print("Generate EarthTime data...")
 
-    # Specify the dates that we want to process
+    # IMPORTANT: you need to specify the dates that we want to process
     date_list = []
-
-    # Date batch
-    start_d_str_list = ["2019-03-03", "2019-03-04"]
-    date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
-
-    # Date batch 1
+    date_list.append(get_time_range_list(["2019-03-03", "2019-03-04"], duration=24, offset_hours=3))
     #date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
-
-    # Date batch 2
     #date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
-
-    # Date batch 3
     #date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
 
     # Specify the starting and ending time
@@ -628,6 +622,7 @@ def generate_plume_viz_json(start_d, end_d):
         smell_counts = None
 
     # Create the json object (for front-end)
+    # TODO: instead of using start_d and end_d, check existing videos and generate the json file
     gp_end_d = end_d.groupby(end_d.year)
     viz_json = {}
     for k in gp_end_d:
