@@ -589,8 +589,10 @@ def rename_video_frames():
     # For each date, unzip and rename the video frames
     for dn in get_all_dir_names_in_folder("data/rgb/"):
         in_dir_p = "data/rgb/" + dn + "/"
+        out_dir_p = in_dir_p + "frames/"
+        if os.path.isdir(out_dir_p): continue
         try:
-            unzip_and_rename(in_dir_p, in_dir_p+"frames/", offset_hours=3)
+            unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3)
         except Exception:
             traceback.print_exc()
 
