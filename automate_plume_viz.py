@@ -169,7 +169,8 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     return (df_layer, df_share_url, df_img_url, file_name)
 
 
-def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8):
+def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8,
+        hysplit_root="/projects/hysplit/"):
     """
     Run the HYSPLIT simulation
 
@@ -180,6 +181,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         emit_time_hrs: affects the emission time for running each Hysplit model
         duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
         filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
+        hysplit_root: the root directory of the hysplit software
     """
     print("="*100)
     print("="*100)
@@ -206,7 +208,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         if not findInFolder(folder,"PARDUMP*.txt"):
             pdump = findInFolder(folder, "PARDUMP.*")
             # TODO: unzip PARDUMP gzip files
-            cmd = "/opt/hysplit/exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
+            cmd = hysplit_root + "exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
             if pdump.find('.txt') == -1:
                 pdump_txt_list.append(pdump+".txt")
             print("Run Hysplit for %s" % pdump)

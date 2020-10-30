@@ -133,9 +133,10 @@ class CachedDispersionRun:
         emitTime -- length of emission, in hours
         runTime -- length of simulation, in hours
         fileName -- file name of binary results file
+        hysplit_root -- the root directory of the hysplit software
     """
     def __init__(self, source, runStartLocal, emitTimeHrs, runTimeHrs, hysplitModelSettings,
-                 fileName='cdump', hysplitLoc='/opt/hysplit/exec/', verbose=False,
+                 fileName='cdump', hysplit_root='/projects/hysplit/', verbose=False,
                  dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
                  hrrrDirPath='/projects/earthtime/air-data/hrrr'):
         try:
@@ -189,7 +190,7 @@ class CachedDispersionRun:
             exit(1)
 
         self.fileName = fileName
-        self.hysplitLoc = hysplitLoc
+        self.hysplitLoc = hysplit_root + "exec/"
         self.runHr = int(runTimeHrs)
         self.runMin = int((runTimeHrs - int(runTimeHrs))*60)
         self.fNames = self.fetchWeatherFiles()
@@ -453,7 +454,7 @@ class CachedDispersionRun:
 {#          #}180     360     lat/lon number of data points
 {#          #}2               default land use category
 {#          #}0.2             default roughness length (m)
-{#          #}'opt/hysplit/bdyfiles/'  directory of files""")
+{#          #}'"""+hysplit_root+"""bdyfiles/'  directory of files""")
         cFile = open(self.tmpPath() + '/ASCDATA.CFG','w')
         cFile.write(templ.render(run=self))
         cFile.close()
