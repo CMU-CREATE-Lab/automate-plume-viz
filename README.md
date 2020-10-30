@@ -5,7 +5,7 @@ This repository hosts the code for generating videos that show the visualization
 SSH to the hal21 server and clone this repository. (This step is only for the CoCalc system administrator.)
 ```sh
 ssh [USER_NAME]@hal21.andrew.cmu.edu
-cd /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/
+cd /projects/earthtime/air-src/
 git clone https://github.com/CMU-CREATE-Lab/automate-plume-viz.git
 ```
 Change the permission of the folder so that the CoCalc system can read that. (This step is only for the CoCalc system administrator.)
@@ -40,6 +40,14 @@ screen -X quit
 # Keep looking at the screen log
 tail -f screenlog.0
 ```
+Next, move the created particle files to the folder that allows public access, so that the thumbnail server can read them. If you process the data on the hal21 server, use the following command:
+```sh
+cp /projects/earthtime/air-src/automate-plume-viz/data/bin/* /projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
+```
+If you process the data on other servers, you need to rsync the particle files back to the hal21 server. On your server, run the following:
+```sh
+rsync -av /projects/earthtime/air-src/automate-plume-viz/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
+```
 Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days). Notice that if you forget to copy and paste the EarthTime layers, this step will fail.
 ```sh
 sh bg.sh python automate_plume_viz.py download_video_frames
@@ -54,11 +62,11 @@ sh bg.sh python automate_plume_viz.py create_all_videos
 ```
 After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access. If you process the data on the hal21 server, use the following command:
 ```sh
-cp /projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
+cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 If you process the data on other servers, you need to rsync the data back to the hal21 server. On your server, run the following:
 ```sh
-rsync -av [PATH]/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
+rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
 ```sh

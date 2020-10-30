@@ -1,9 +1,13 @@
 """
 This is the utility function for automating plume visualization
-Developed by Amy, Randy, and edited by Yen-Chia
+This code was taken and edited from the following path on the hal21 server:
+    /projects/earthtime/files/air-src/linRegModel/pardump_example/pardumpdump-randy-amy-util.ipynb
 """
+
+
 import glob, os, array, datetime, math, random
 import numpy as np
+from utils import subprocess_check
 
 
 def gunzipFiles(fnames, zipfnames):
@@ -114,8 +118,43 @@ def scale_particle(sigh):
     return ((sigh + 1.0) / 12600.0) + 1.0 #offset by 1 to make sure all points draw
 
 
-# coloring based on hour
-def create_bin(fnames, o_file):
+def get_points(lines, rgb, filtered=0.0):
+    """
+    Get flow points, assumes time is every minute
+    """
+    points = {}
+    c = pack_color(rgb)
+    for l in lines:
+        if len(l) == 7:
+            minute = l[6]
+            dt = datetime.datetime(2000 + l[2],l[3],l[4],l[5],l[6])
+            epoch = datetime_to_epoch(dt)
+        if len(l) == 6:
+            x,y = lonlat_to_pixel_xy((l[1],l[0]))
+            z = float(l[2])
+        if len(l) == 5:
+            idx = l[4]
+            if idx not in points:
+                points[idx] = []
+            if minute % 5 == 0:
+                points[idx].append([x,y,z,epoch])
+    data = []
+    for idx in points:
+        if random.random() > filtered:
+            p = points[idx]
+            if len(p) > 1:
+                for i in range(0,len(p) - 1):
+                    p0 = p[i]
+                    p1 = p[i+1]
+                    # Each shader record in float32 is:
+                    # x0, y0, z0, epoch0, x1, y1, z1, epoch1, packedColor
+                    # x and y are in web mercator space 0,0 is NW 255,255 is SE
+                    data += [p0[0],p0[1], p0[2], p0[3], p1[0],p1[1], p1[2], p1[3], c]
+    return data
+
+
+def create_bin(fnames, o_file, colormap):
+    """Coloring based on hour"""
     i = 0
     step = 255/(len(fnames) - 1)
     points = []
@@ -126,14 +165,16 @@ def create_bin(fnames, o_file):
         points += get_points(lines, rgb)
         lines = []
         i += 1
-    array.array('f', points).tofile(open(o_fname, 'wb'))
+    array.array('f', points).tofile(open(o_file, 'wb'))
     points = []
 
 
-# coloring based on source
-# filter_ratio=0.8 means that 80% of the points will be dropped
-# with_size=True means visualizing puffs instead of particles
 def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duration, filter_ratio=0.8):
+    """
+    Coloring based on source
+    filter_ratio=0.8 means that 80% of the points will be dropped
+    with_size=True means visualizing puffs instead of particles
+    """
     runTimeHrs = len(fnames) / numSources
     print("Only use %.2f of all the points to reduce file size" % (1-filter_ratio))
     all_points = []

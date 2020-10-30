@@ -1,7 +1,8 @@
 *.ipynb.sage-jupyter2
 *.DS_Store
-data/rgb/
-data_old/
+data/*
+!data/font/
+!data/earth_time_layer_template.csv
 *.html
 *.term
 *.pyc
