@@ -488,7 +488,7 @@ def genetate_earthtime_data(o_url):
     date_list = []
 
     # Date batch
-    start_d_str_list = ["2019-03-05", "2019-03-06"]
+    start_d_str_list = ["2019-03-03", "2019-03-04"]
     date_list.append(get_time_range_list(start_d_str_list, duration=24, offset_hours=3))
 
     # Date batch 1
@@ -571,13 +571,14 @@ def run_hysplit(o_root, start_d, file_name, o_url, num_workers=4):
     pool.join()
 
 
-def download_video_frames(o_root, df_share_url, df_img_url):
+def download_video_frames(o_url, df_share_url, df_img_url):
     print("Download video frames from the thumbnail server...")
 
     # Make sure that the dates have the hysplit simulation results
     date_has_hysplit = []
     for idx, row in df_share_url.iterrows():
-        if os.path.isfile(o_root + "plume_" + row["date"] + ".bin"):
+        fname = "plume_" + row["date"] + ".bin"
+        if is_url_valid(o_url + fname):
             date_has_hysplit.append(row["date"])
     get_frames(df_img_url[df_img_url["date"].isin(date_has_hysplit)], dir_p="data/rgb/")
 
@@ -681,7 +682,7 @@ def main(argv):
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
     if argv[1] in ["download_video_frames", "pipeline"]:
-        download_video_frames(o_root, df_share_url, df_img_url)
+        download_video_frames(o_url, df_share_url, df_img_url)
 
     # Then, rename files to epochtime
     if argv[1] in ["rename_video_frames", "pipeline"]:
