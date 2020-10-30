@@ -142,6 +142,7 @@ class CachedDispersionRun:
         try:
             self.dispersionCachePath = dispersionCachePath
             self.hrrrDirPath = hrrrDirPath
+            self.hysplit_root = hysplit_root
 
             assert(source)
             self.source = source
@@ -454,7 +455,7 @@ class CachedDispersionRun:
 {#          #}180     360     lat/lon number of data points
 {#          #}2               default land use category
 {#          #}0.2             default roughness length (m)
-{#          #}'"""+hysplit_root+"""bdyfiles/'  directory of files""")
+{#          #}'"""+self.hysplit_root+"""bdyfiles/'  directory of files""")
         cFile = open(self.tmpPath() + '/ASCDATA.CFG','w')
         cFile.write(templ.render(run=self))
         cFile.close()
