@@ -16,7 +16,6 @@ else
   echo "sh bg.sh python main.py rename_video_frames"
   echo "sh bg.sh python main.py create_all_videos"
   echo "sh bg.sh python main.py generate_plume_viz_json"
-  echo "sh bg.sh python main.py pipeline"
   exit 1
 fi
 

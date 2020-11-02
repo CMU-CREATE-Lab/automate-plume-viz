@@ -4,11 +4,11 @@ The main script for processing the plume visualization videos
 """
 
 
-import sys, os, traceback, urllib, json, time
+import sys, os, traceback, time
 import pandas as pd
 from multiprocessing.dummy import Pool
 from cached_hysplit_run_lib import DispersionSource
-from automate_plume_viz import get_time_range_list, generate_metadata, check_and_create_dir, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video
+from automate_plume_viz import get_time_range_list, generate_metadata, check_and_create_dir, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video, generate_plume_viz_json
 
 
 def genetate_earthtime_data(o_url):
@@ -16,7 +16,7 @@ def genetate_earthtime_data(o_url):
 
     # IMPORTANT: you need to specify the dates that we want to process
     date_list = []
-    date_list.append(get_time_range_list(["2019-03-03", "2019-03-04"], duration=24, offset_hours=3))
+    date_list.append(get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3))
     #date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
     #date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
     #date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
@@ -143,47 +143,6 @@ def create_all_videos():
         create_video(in_dir_p + "frames/", in_dir_p + dn + ".mp4", font_p)
 
 
-def generate_plume_viz_json(start_d, end_d):
-    print("Generate the json file for the front-end...")
-
-    # Get the number of smell reports in the desired dates
-    time_list = list(map(lambda x: x.timestamp(), start_d.to_pydatetime()))
-    time_list += list(map(lambda x: x.timestamp(), end_d.to_pydatetime()))
-    start_time = int(min(time_list)) - 5000
-    end_time = int(max(time_list)) + 5000
-    smell_pgh_api_url = "https://api.smellpittsburgh.org/api/v2/smell_reports?group_by=day&aggregate=true&smell_value=3%2C4%2C5&start_time=" + str(start_time) + "&end_time=" + str(end_time) + "&state_ids=1&timezone_string=America%252FNew_York"
-    try:
-        print("\t{Request} %s\n" % smell_pgh_api_url)
-        response = urllib.request.urlopen(smell_pgh_api_url)
-        smell_counts = json.load(response)
-        print("\t{Done} %s\n" % smell_pgh_api_url)
-    except Exception:
-        traceback.print_exc()
-        smell_counts = None
-
-    # Create the json object (for front-end)
-    # TODO: instead of using start_d and end_d, check existing videos and generate the json file
-    gp_end_d = end_d.groupby(end_d.year)
-    viz_json = {}
-    for k in gp_end_d:
-        g_json = {"columnNames": ["label", "color", "file_name", "date"], "data": []}
-        for d in sorted(gp_end_d[k].to_pydatetime()):
-            label = d.strftime("%b %d")
-            color = -1 if smell_counts is None else smell_counts[d.strftime("%Y-%m-%d")]
-            vid_fn = d.strftime("%Y%m%d")
-            vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
-            if os.path.isfile(vid_path):
-                # Only add to json if the file exists
-                g_json["data"].append([label, color, vid_fn + ".mp4", d.strftime("%Y-%m-%d")])
-        viz_json[k] = g_json
-
-    # Save the json for the front-end visualization website
-    p = "data/plume_viz.json"
-    with open(p, "w") as f:
-        json.dump(viz_json, f)
-    os.chmod(p, 0o777)
-
-
 def main(argv):
     """The main function"""
     if len(argv) < 2:
@@ -194,7 +153,6 @@ def main(argv):
         print("python main.py rename_video_frames")
         print("python main.py create_all_videos")
         print("python main.py generate_plume_viz_json")
-        print("python main.py pipeline")
         return
 
     program_start_time = time.time()
@@ -205,6 +163,9 @@ def main(argv):
     # Specify the URL for accessing the bin files
     o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/"
 
+    # Specify the URL for accessing the video files
+    video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/"
+
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
     start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(o_url)
@@ -213,26 +174,29 @@ def main(argv):
         return
 
     # Then run the following to create hysplit simulation files
-    if argv[1] in ["run_hysplit", "pipeline"]:
+    # IMPORTANT: after creating the bin files, you need to move them to the correct folder for public access
+    # IMPORTANT: check the README about how to copy and move the bin files
+    if argv[1] == "run_hysplit":
         run_hysplit(o_root, start_d, file_name, o_url)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
-    if argv[1] in ["download_video_frames", "pipeline"]:
+    # IMPORTANT: if you forgot to copy the bin files to the correct folder, this step will not do anything
+    if argv[1] == "download_video_frames":
         download_video_frames(o_url, df_share_url, df_img_url)
 
     # Then, rename files to epochtime
-    if argv[1] in ["rename_video_frames", "pipeline"]:
+    if argv[1] == "rename_video_frames":
         rename_video_frames()
 
     # Then, create all videos
-    if argv[1] in ["create_all_videos", "pipeline"]:
+    if argv[1] == "create_all_videos":
         create_all_videos()
 
     # Finally, generate the json file for the front-end website
     # Copy and paste the json file to the front-end plume visualization website
-    if argv[1] in ["generate_plume_viz_json", "pipeline"]:
-        generate_plume_viz_json(start_d, end_d)
+    if argv[1] == "generate_plume_viz_json":
+        generate_plume_viz_json(video_url)
 
     program_run_time = (time.time()-program_start_time)/60
     print("Took %.2f minutes to run the program" % program_run_time)

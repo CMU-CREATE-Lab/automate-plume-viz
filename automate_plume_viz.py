@@ -5,6 +5,7 @@ Automate the plume visualization using hysplit model simulation
 
 import os, re, datetime, json, pytz, subprocess, time, shutil, requests, traceback
 import numpy as np
+from bs4 import BeautifulSoup
 import pandas as pd
 import matplotlib.pyplot as plt
 import urllib.parse
@@ -487,3 +488,71 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
         os.rename(out_file_p_tmp, out_file_p)
     os.chmod(out_file_p, 0o777)
     print("DONE saving video to %r" % out_file_p)
+
+
+
+def get_file_list_from_url(url, ext=""):
+    """
+    Get a list of file names from an URL
+    Input:
+        url: an URL path, e.g., "https://cocalc-www.createlab.org/pardumps/plumeviz/video/"
+        ext: the extension of the files that you want, e.g., "mp4"
+    """
+    file_list= None
+    try:
+        print("\t{Request} %s\n" % url)
+        response = urllib.request.urlopen(url)
+        soup = BeautifulSoup(response.read(), "html.parser")
+        file_list = [url + node.get("href") for node in soup.find_all("a") if node.get("href").endswith(ext)]
+        print("\t{Done} %s\n" % url)
+    except Exception:
+        traceback.print_exc()
+    return file_list
+
+
+def generate_plume_viz_json(video_url):
+    """
+    Generate a json file for the front-end website
+    Input:
+        video_url: url path for storing the videos, e.g., "https://cocalc-www.createlab.org/pardumps/plumeviz/video/"
+    """
+    print("Generate the json file for the front-end...")
+
+    # Get the number of smell reports in the desired dates
+    time_list = list(map(lambda x: x.timestamp(), start_d.to_pydatetime()))
+    time_list += list(map(lambda x: x.timestamp(), end_d.to_pydatetime()))
+    start_time = int(min(time_list)) - 5000
+    end_time = int(max(time_list)) + 5000
+    smell_pgh_api_url = "https://api.smellpittsburgh.org/api/v2/smell_reports?group_by=day&aggregate=true&smell_value=3%2C4%2C5&start_time=" + str(start_time) + "&end_time=" + str(end_time) + "&state_ids=1&timezone_string=America%252FNew_York"
+    smell_counts = None
+    try:
+        print("\t{Request} %s\n" % smell_pgh_api_url)
+        response = urllib.request.urlopen(smell_pgh_api_url)
+        smell_counts = json.load(response)
+        print("\t{Done} %s\n" % smell_pgh_api_url)
+    except Exception:
+        traceback.print_exc()
+
+    # Get the list of available plume videos
+    video_list = get_file_list_from_url(video_url, ext="mp4")
+
+    # Create the json object (for front-end)
+    gp_end_d = end_d.groupby(end_d.year)
+    viz_json = {}
+    for k in gp_end_d:
+        g_json = {"columnNames": ["label", "color", "file_name", "date"], "data": []}
+        for d in sorted(gp_end_d[k].to_pydatetime()):
+            label = d.strftime("%b %d")
+            color = -1 if smell_counts is None else smell_counts[d.strftime("%Y-%m-%d")]
+            vid_fn = d.strftime("%Y%m%d")
+            vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
+            if os.path.isfile(vid_path):
+                # Only add to json if the file exists
+                g_json["data"].append([label, color, vid_fn + ".mp4", d.strftime("%Y-%m-%d")])
+        viz_json[k] = g_json
+
+    # Save the json for the front-end visualization website
+    p = "data/plume_viz.json"
+    with open(p, "w") as f:
+        json.dump(viz_json, f)
+    os.chmod(p, 0o777)
