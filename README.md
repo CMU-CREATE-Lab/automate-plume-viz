@@ -72,11 +72,7 @@ Finally, generate the json file for the [front-end plume visualization website](
 ```sh
 python main.py generate_plume_viz_json
 ```
-If you wish to run all of the steps at the background, use the following command:
-```sh
-sh bg.sh python main.py pipeline
-```
-To add more dates in the pipeline, edit the genetate_earthtime_data() function in the "automate_plume_viz.py" file.
+To add more dates in the pipeline, edit the genetate_earthtime_data() function in the "main.py" file.
 
 # For your application
 
