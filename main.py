@@ -8,12 +8,11 @@ import sys, os, traceback, time
 import pandas as pd
 from multiprocessing.dummy import Pool
 from cached_hysplit_run_lib import DispersionSource
-from automate_plume_viz import get_time_range_list, generate_metadata, check_and_create_dir, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video, generate_plume_viz_json
+from automate_plume_viz import get_time_range_list, generate_metadata, check_and_create_dir, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video, generate_plume_viz_json, get_start_end_time_list
 
 
-def genetate_earthtime_data(date_list, o_url, url_partition=4, img_size=540, redo=redo,
-        prefix="plume_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233",
-        credits="CREATE Lab", category="Plume Viz", name_prefix="PARDUMP "):
+def genetate_earthtime_data(date_list, o_url, url_partition, img_size, redo, prefix,
+        add_smell, lat, lng, zoom, credits,  category, name_prefix):
     print("Generate EarthTime data...")
 
     # Specify the starting and ending time
@@ -143,7 +142,7 @@ def main(argv):
     # IMPORTANT: specify the URL for accessing the bin files
     o_url = None
     #o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    assert(o_orl is not None), "you need to edit the URL for accessing the particle files"
+    assert(o_url is not None), "you need to edit the URL for accessing the particle files"
 
     # IMPORTANT: specify the URL for accessing the video files
     video_url = None
@@ -178,20 +177,22 @@ def main(argv):
     assert(len(sources) > 0),"you need to specify the pollution sources"
 
     # Run the following line first to generate EarthTime layers
-    # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
-    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(date_list, o_url)
+    # IMPORTANT: you need to copy and paste the generated layers to the EarthTime layers CSV file
+    # ...check the README file about how to do this
+    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(date_list, o_url,
+            url_partition, img_size, redo, prefix, add_smell, lat, lng, zoom, credits, category, name_prefix)
     if argv[1] == "genetate_earthtime_data":
         print("END")
         return
 
     # Then run the following to create hysplit simulation files
+    # IMPORTANT: after creating the bin files, you need to move them to the correct folder for public access
+    # ... check the README file about how to copy and move the bin files
     # IMPORTANT: if you are doing experiments on creating the particle files,
     # ...make sure you set the input argument "o_url" of the run_hysplit function to None
     # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
     if argv[1] == "run_hysplit":
         run_hysplit(sources, o_root, start_d, file_name, o_url=o_url)
-        # IMPORTANT: after creating the bin files, you need to move them to the correct folder for public access
-        # ... check the README file about how to copy and move the bin files
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
@@ -204,10 +205,10 @@ def main(argv):
         rename_video_frames()
 
     # Then, create all videos
+    # IMPORTANT: after creating the video files, you need to move them to the correct folder for public access
+    # ... check the README file about how to copy and move the video files
     if argv[1] == "create_all_videos":
         create_all_videos()
-        # IMPORTANT: after creating the video files, you need to move them to the correct folder for public access
-        # ... check the README file about how to copy and move the video files
 
     # Finally, generate the json file for the front-end website
     # IMPORTANT: you need to copy and paste the json file to the front-end plume visualization website
