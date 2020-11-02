@@ -42,10 +42,16 @@ tail -f screenlog.0
 ```
 Next, move the created particle files to the folder that allows public access, so that the thumbnail server can read them. If you process the data on the hal21 server, use the following command:
 ```sh
+cp [YOUR_PROJECT_PATH]/data/bin/* [YOUR_PUBLIC_BIN_PATH]
+
+# For example:
 cp /projects/earthtime/air-src/automate-plume-viz/data/bin/* /projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
 ```
 If you process the data on other servers, you need to rsync the particle files back to the hal21 server. On your server, run the following:
 ```sh
+rsync -av [YOUR_PROJECT_PATH]/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_BIN_FOLDER]
+
+# For example:
 rsync -av /projects/earthtime/air-src/automate-plume-viz/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
 ```
 Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days). Notice that if you forget to copy and paste the EarthTime layers, this step will fail.
@@ -62,10 +68,16 @@ sh bg.sh python main.py create_all_videos
 ```
 After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access. If you process the data on the hal21 server, use the following command:
 ```sh
+cp [YOUR_PROJECT_PATH]/data/rgb/*/*.mp4 [YOUR_PUBLIC_VIDEO_PATH]
+
+# For example:
 cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 If you process the data on other servers, you need to rsync the data back to the hal21 server. On your server, run the following:
 ```sh
+rsync -av [YOUR_PROJECT_PATH]/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_VIDEO_FOLDER]
+
+# For example:
 rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
