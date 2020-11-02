@@ -11,46 +11,26 @@ from cached_hysplit_run_lib import DispersionSource
 from automate_plume_viz import get_time_range_list, generate_metadata, check_and_create_dir, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video, generate_plume_viz_json
 
 
-def genetate_earthtime_data(o_url):
+def genetate_earthtime_data(date_list, o_url, url_partition=4, img_size=540, redo=redo,
+        prefix="plume_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233",
+        credits="CREATE Lab", category="Plume Viz", name_prefix="PARDUMP "):
     print("Generate EarthTime data...")
-
-    # Dates to process
-    date_list = []
-
-    # IMPORTANT: you need to specify the dates to process
-    # Below are some examples to use:
-    #date_list.append(get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3))
-    #date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
-    #date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
-    #date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
-
-    # Sanity check
-    assert(len(date_list) > 0),"ERROR: you need to go to the main.py file to specify the dates in the genetate_earthtime_data() function"
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
-    for i in range(len(date_list)):
-        sd, ed = date_list[i]
-        if i == 0: # batch 1
-            redo = 1
-        elif i == 1: # batch 2
-            redo = 2
-        else: # other batch
-            redo = 0
-        # IMPORTANT: for your application, change the prefix, otherwise your data will be mixed with others
-        # IMPORTANT: if you do not want to visualize smell reports, set add_smell to False
-        dl, ds, di, fn = generate_metadata(sd, ed, url_partition=4, img_size=540, redo=redo, prefix="plume_",
-                add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", credits="CREATE Lab",
-                category="Plume Viz", name_prefix="PARDUMP ", file_path=o_url)
-        if df_layer is None:
-            df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
-        else:
-            df_layer = pd.concat([df_layer, dl], ignore_index=True)
-            df_share_url = pd.concat([df_share_url, ds], ignore_index=True)
-            df_img_url = pd.concat([df_img_url, di], ignore_index=True)
-            file_name = file_name.union(fn)
-            start_d = start_d.union(sd)
-            end_d = end_d.union(ed)
+    sd, ed = date_list[0], date_list[1]
+    dl, ds, di, fn = generate_metadata(sd, ed, url_partition=url_partition, img_size=img_size,
+            redo=redo, prefix=prefix, add_smell=add_smell, lat=lat, lng=lng, zoom=zoom, credits=credits,
+            category=category, name_prefix=name_prefix, file_path=o_url)
+    if df_layer is None:
+        df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
+    else:
+        df_layer = pd.concat([df_layer, dl], ignore_index=True)
+        df_share_url = pd.concat([df_share_url, ds], ignore_index=True)
+        df_img_url = pd.concat([df_img_url, di], ignore_index=True)
+        file_name = file_name.union(fn)
+        start_d = start_d.union(sd)
+        end_d = end_d.union(ed)
 
     # Save rows of EarthTime CSV layers to a file
     p = "data/earth_time_layer.csv"
@@ -70,24 +50,10 @@ def genetate_earthtime_data(o_url):
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
-def run_hysplit(o_root, start_d, file_name, o_url, num_workers=4):
+def run_hysplit(sources, o_root, start_d, file_name, o_url=None, num_workers=4):
     print("Run Hysplit model...")
 
     check_and_create_dir(o_root)
-
-    # Location of the sources of pollution
-    sources = []
-
-    # IMPORTANT: you need to specify the pollution sources
-    # Below are some examples to use:
-    #sources = [
-    #    DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
-    #    DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
-    #    DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
-    #    DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
-
-    # Sanity check
-    assert(len(sources) > 0),"ERROR: you need to go to the main.py file and specify the pollution sources in the run_hysplit() function"
 
     # Prepare the list of dates for running the simulation
     start_time_eastern_all = start_d.strftime("%Y-%m-%d %H:%M").values
@@ -96,10 +62,10 @@ def run_hysplit(o_root, start_d, file_name, o_url, num_workers=4):
     o_file_all = o_root + file_name.values + ".bin"
 
     # Prepare the list of URLs for checking if the file exists in the remote server
-    # IMPORTANT: if you are doing experiments on the particle files,
-    # ...make sure you set o_url_all to [None]*len(file_name.values)
-    # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
-    o_url_all = o_url + file_name.values + ".bin"
+    if o_url is None:
+        o_url_all = [None]*len(file_name.values)
+    else:
+        o_url_all = o_url + file_name.values + ".bin"
 
     # Set parameters (see the simulate function in automate_plume_viz.py to get more details)
     emit_time_hrs = 1
@@ -170,32 +136,62 @@ def main(argv):
     program_start_time = time.time()
 
     # IMPORTANT: specify the path on the server that stores your particle bin files
-    o_root = None # EDIT HERE
-    #o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/" # DO NOT USE THIS EXAMPLE
+    o_root = None
+    #o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/" # Yen-Chia's example (DO NOT USE)
+    assert(o_root is not None), "you need to edit the path for storing hysplit particle files"
 
     # IMPORTANT: specify the URL for accessing the bin files
-    o_url = None # EDIT HERE
-    #o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/" # DO NOT USE THIS EXAMPLE
+    o_url = None
+    #o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    assert(o_orl is not None), "you need to edit the URL for accessing the particle files"
 
-    # Specify the URL for accessing the video files
-    video_url = None # EDIT HERE
-    #video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/" # DO NOT USE THIS EXAMPLE
+    # IMPORTANT: specify the URL for accessing the video files
+    video_url = None
+    #video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
+    assert(video_url is not None), "you need to edit the URL for accessing the video files"
 
-    # Sanity check
-    assert(o_root is not None and o_orl is not None and video_url is not None), "ERROR: you need to go to the main.py file to edit the paths in the main() function"
+    # IMPORTANT: specify the parameters
+    # (see the generate_metadata function docstring in the automate_plume_viz.py file for details)
+    date_list = None # a list to indicate the starting and ending dates to process (see example below)
+    prefix = None # a unique string to prevent your data from mixing with others
+    add_smell = True # set this to False if you do not need smell reports
+    lat = "40.42532" # set the latitude that you want on the output video
+    lng = "-79.91643" # set the longitude that you want on the output video
+    zoom = "9.233" # set the Google Map zoom level you want on the output video
+    credits = "CREATE Lab" # you can use this default value
+    category = "Plume Viz" # you can use this default value
+    name_prefix = "PARDUMP " # you can use this default value
+    redo = 0 # you can use this default value
+    url_partition = 4 # you can use this default value
+    img_size = 540 # you can use this default value
+    # Yen-Chia's example below for a set of parameters (DO NOT USE)
+    #date_list, redo, prefix = get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3), 1, "plume_"
+    #date_list, redo, prefix = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3), 1, "plume_"
+    #date_list, redo, prefix = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2, "plume_"
+    #date_list, redo, prefix = get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3), 0, "plume_"
+    assert(date_list is not None),"you need to specify the dates to process"
+    assert(prefix is not None),"you need to specify the prefix of the unique share url"
+
+    # IMPORTANT: specify the ocation of the sources of pollution (Yen-Chia's example below)
+    sources = []
+    #sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+    assert(len(sources) > 0),"you need to specify the pollution sources"
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
-    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(o_url)
+    start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(date_list, o_url)
     if argv[1] == "genetate_earthtime_data":
         print("END")
         return
 
     # Then run the following to create hysplit simulation files
-    # IMPORTANT: after creating the bin files, you need to move them to the correct folder for public access
-    # IMPORTANT: check the README about how to copy and move the bin files
+    # IMPORTANT: if you are doing experiments on creating the particle files,
+    # ...make sure you set the input argument "o_url" of the run_hysplit function to None
+    # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
     if argv[1] == "run_hysplit":
-        run_hysplit(o_root, start_d, file_name, o_url)
+        run_hysplit(sources, o_root, start_d, file_name, o_url=o_url)
+        # IMPORTANT: after creating the bin files, you need to move them to the correct folder for public access
+        # ... check the README file about how to copy and move the bin files
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
@@ -210,9 +206,12 @@ def main(argv):
     # Then, create all videos
     if argv[1] == "create_all_videos":
         create_all_videos()
+        # IMPORTANT: after creating the video files, you need to move them to the correct folder for public access
+        # ... check the README file about how to copy and move the video files
 
     # Finally, generate the json file for the front-end website
-    # Copy and paste the json file to the front-end plume visualization website
+    # IMPORTANT: you need to copy and paste the json file to the front-end plume visualization website
+    # ...if you forgot to copy the video files to the correct folder, videos will not be found online
     if argv[1] == "generate_plume_viz_json":
         generate_plume_viz_json(video_url)
 
