@@ -135,45 +135,61 @@ def main(argv):
     program_start_time = time.time()
 
     # IMPORTANT: specify the path on the server that stores your particle bin files
+    # o_root = "[YOUR_PATH]/automate-plume-viz/data/bin/"
     o_root = None
-    #o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/" # Yen-Chia's example (DO NOT USE)
-    assert(o_root is not None), "you need to edit the path for storing hysplit particle files"
 
     # IMPORTANT: specify the URL for accessing the bin files
+    # o_url = "https://[YOUR_URL_ROOT]/bin/"
     o_url = None
-    #o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    assert(o_url is not None), "you need to edit the URL for accessing the particle files"
 
     # IMPORTANT: specify the URL for accessing the video files
+    # video_url = "https://[YOUR_URL_ROOT]/video/"
     video_url = None
-    #video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
-    assert(video_url is not None), "you need to edit the URL for accessing the video files"
 
-    # IMPORTANT: specify the parameters
-    # (see the generate_metadata function docstring in the automate_plume_viz.py file for details)
-    date_list = None # a list to indicate the starting and ending dates to process (see example below)
-    prefix = None # a unique string to prevent your data from mixing with others
-    add_smell = True # set this to False if you do not need smell reports
-    lat = "40.42532" # set the latitude that you want on the output video
-    lng = "-79.91643" # set the longitude that you want on the output video
-    zoom = "9.233" # set the Google Map zoom level you want on the output video
-    credits = "CREATE Lab" # you can use this default value
-    category = "Plume Viz" # you can use this default value
-    name_prefix = "PARDUMP " # you can use this default value
-    redo = 0 # you can use this default value
-    url_partition = 4 # you can use this default value
-    img_size = 540 # you can use this default value
-    # Yen-Chia's example below for a set of parameters (DO NOT USE)
+    # IMPORTANT: specify a list to indicate the starting and ending dates to proces
+    # You can use two supporing functions to generate the list, see below for examples
+    # date_list = get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3)
+    # date_list = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3)
+    date_list = None
+
+    # IMPORTANT: specify an unique string to prevent your data from mixing with others
+    # Check the generate_metadata function docstring in automate_plume_viz.py for details
+    prefix = None
+
+    # IMPORTANT: specify a list of pollution sources
+    # See below for an example using the DispersionSource class
+    # sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50)]
+    sources = []
+
+    # IMPORTANT: below are the parameters that you can use by default
+    # Check the generate_metadata function docstring in automate_plume_viz.py for details
+    add_smell = True
+    lat = "40.42532"
+    lng = "-79.91643"
+    zoom = "9.233"
+    credits = "CREATE Lab"
+    category = "Plume Viz"
+    name_prefix = "PARDUMP "
+    redo = 0
+    url_partition = 4
+    img_size = 540
+
+    # Below is Yen-Chia Hsu's setting, you should not use these parameters
+    #o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/" # Yen-Chia's example (DO NOT USE)
+    #o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    #video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
     #date_list, redo, prefix = get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3), 1, "plume_"
     #date_list, redo, prefix = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3), 1, "plume_"
     #date_list, redo, prefix = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2, "plume_"
     #date_list, redo, prefix = get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3), 0, "plume_"
+    #sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+
+    # Sanity checks
+    assert(o_root is not None), "you need to edit the path for storing hysplit particle files"
+    assert(o_url is not None), "you need to edit the URL for accessing the particle files"
+    assert(video_url is not None), "you need to edit the URL for accessing the video files"
     assert(date_list is not None),"you need to specify the dates to process"
     assert(prefix is not None),"you need to specify the prefix of the unique share url"
-
-    # IMPORTANT: specify the ocation of the sources of pollution (Yen-Chia's example below)
-    sources = []
-    #sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
     assert(len(sources) > 0),"you need to specify the pollution sources"
 
     # Run the following line first to generate EarthTime layers
