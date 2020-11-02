@@ -80,7 +80,7 @@ rsync -av [YOUR_PROJECT_PATH]/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:
 # For example:
 rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
-Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
+To access the videos, go to "https://cocalc-www.createlab.org/pardumps/" and select the folders or files. Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
 ```sh
 python main.py generate_plume_viz_json
 ```
