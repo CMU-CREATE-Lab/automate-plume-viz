@@ -42,14 +42,14 @@ tail -f screenlog.0
 ```
 Next, move the created particle files to the folder that allows public access, so that the thumbnail server can read them. If you process the data on the hal21 server, use the following command:
 ```sh
-cp [YOUR_PROJECT_PATH]/data/bin/* [YOUR_PUBLIC_BIN_PATH]
+cp [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [YOUR_PUBLIC_BIN_PATH]
 
 # For example:
 cp /projects/earthtime/air-src/automate-plume-viz/data/bin/* /projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
 ```
 If you process the data on other servers, you need to rsync the particle files back to the hal21 server. On your server, run the following:
 ```sh
-rsync -av [YOUR_PROJECT_PATH]/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_BIN_FOLDER]
+rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_BIN_PATH]
 
 # For example:
 rsync -av /projects/earthtime/air-src/automate-plume-viz/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
@@ -68,14 +68,14 @@ sh bg.sh python main.py create_all_videos
 ```
 After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access. If you process the data on the hal21 server, use the following command:
 ```sh
-cp [YOUR_PROJECT_PATH]/data/rgb/*/*.mp4 [YOUR_PUBLIC_VIDEO_PATH]
+cp [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [YOUR_PUBLIC_VIDEO_PATH]
 
 # For example:
 cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 If you process the data on other servers, you need to rsync the data back to the hal21 server. On your server, run the following:
 ```sh
-rsync -av [YOUR_PROJECT_PATH]/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_VIDEO_FOLDER]
+rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_VIDEO_PATH]
 
 # For example:
 rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
