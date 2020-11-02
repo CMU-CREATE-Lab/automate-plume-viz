@@ -14,12 +14,18 @@ from automate_plume_viz import get_time_range_list, generate_metadata, check_and
 def genetate_earthtime_data(o_url):
     print("Generate EarthTime data...")
 
-    # IMPORTANT: you need to specify the dates that we want to process
+    # Dates to process
     date_list = []
-    date_list.append(get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3))
+
+    # IMPORTANT: you need to specify the dates to process
+    # Below are some examples to use:
+    #date_list.append(get_time_range_list(["2019-03-05", "2019-03-06"], duration=24, offset_hours=3))
     #date_list.append(get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3))
     #date_list.append(get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3))
     #date_list.append(get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3))
+
+    # Sanity check
+    assert(len(date_list) > 0),"ERROR: you need to go to the main.py file to specify the dates in the genetate_earthtime_data() function"
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
@@ -70,12 +76,18 @@ def run_hysplit(o_root, start_d, file_name, o_url, num_workers=4):
     check_and_create_dir(o_root)
 
     # Location of the sources of pollution
-    # IMPORTANT: for your application, change these pollution sources
-    sources = [
-        DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
-        DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
-        DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
-        DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+    sources = []
+
+    # IMPORTANT: you need to specify the pollution sources
+    # Below are some examples to use:
+    #sources = [
+    #    DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
+    #    DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
+    #    DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
+    #    DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+
+    # Sanity check
+    assert(len(sources) > 0),"ERROR: you need to go to the main.py file and specify the pollution sources in the run_hysplit() function"
 
     # Prepare the list of dates for running the simulation
     start_time_eastern_all = start_d.strftime("%Y-%m-%d %H:%M").values
@@ -157,14 +169,20 @@ def main(argv):
 
     program_start_time = time.time()
 
-    # Specify the path on the server that stores the bin files
-    o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/"
+    # IMPORTANT: specify the path on the server that stores your particle bin files
+    o_root = None # EDIT HERE
+    #o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/" # DO NOT USE THIS EXAMPLE
 
-    # Specify the URL for accessing the bin files
-    o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/"
+    # IMPORTANT: specify the URL for accessing the bin files
+    o_url = None # EDIT HERE
+    #o_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/bin/" # DO NOT USE THIS EXAMPLE
 
     # Specify the URL for accessing the video files
-    video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/"
+    video_url = None # EDIT HERE
+    #video_url = "https://cocalc-www.createlab.org/pardumps/plumeviz/video/" # DO NOT USE THIS EXAMPLE
+
+    # Sanity check
+    assert(o_root is not None and o_orl is not None and video_url is not None), "ERROR: you need to go to the main.py file to edit the paths in the main() function"
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the layers to the EarthTime layers CSV file
