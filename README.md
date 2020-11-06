@@ -1,22 +1,21 @@
 This repository hosts the code for generating videos that show the visualizations of [smell reports](https://smellpgh.org/) and forward dispersion simulation (using the [HYSPLIT model](https://www.ready.noaa.gov/HYSPLIT.php)). For getting wind information, you may want to check [WindNinja](https://www.firelab.org/project/windninja).
 
 # Setup the tool
-
-SSH to the hal50 server and clone this repository. (This step is only for the CoCalc system administrator.)
+Go to [the "air-src" folder on CoCalc](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/?session=default) and create a new folder for your project. Or you can SSH to the hal50 server and clone this repository.
 ```sh
 ssh [USER_NAME]@hal50.pc.cs.cmu.edu
-cd /projects/earthtime/air-src/
+cd [YOUR_PATH]
 git clone https://github.com/CMU-CREATE-Lab/automate-plume-viz.git
 ```
-Change the permission of the folder so that the CoCalc system can read that. (This step is only for the CoCalc system administrator.)
+Change the permission of the folder so that the CoCalc system can read that.
 ```sh
 chmod 777 automate-plume-viz
 ```
-**Please do not edit the code on CoCalc if you want to use the code for your own project (see the next section).** For co-workers on this project, go to the [CoCalc project](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal50 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. If you want to use the terminal, run the following first to activate the conda environment on the hal50 server:
+You can SSH to the hal50 server and use the Vim editor to write code. Or you can edit the code using the CoCalc interface. Make sure you run the following first to activate the conda environment on the hal50 server:
 ```sh
 . /projects/anaconda3/bin/activate
 ```
-Before you start, you need to go to the "main.py" file to specify several variables. For example, the path to store files, the url to access files, the dates that you want to process, the information about the pollution source, and parameters of the hysplit model. See the "IMPORTANT" tag in that file for details.
+**Before you start, read every "IMPORTANT" tag in the "main.py" file carefully.** You need to specify several variables in that file. For example, the path to store files, the url to access files, the dates that you want to process, the information about the pollution source, the location of the map, and parameters of the hysplit model.
 
 To begin the pipeline, run the following command to generate the EarthTime layers. This will create several files in the "data/" folder. You will need to open the "earth_time_layer.csv" file and copy the rows to the "[DAVOS2019 EarthTime Waypoints and CSV Layers](https://docs.google.com/spreadsheets/d/1zbXFtyevXqfZolxVPNhojZn7y_zxofbe_4UxYmdXp8k/edit#gid=870361385)" Google document. Ask Randy Sargent or Paul Dille for the permission to edit this file, and make sure you understand what each column means. 
 ```sh
@@ -54,16 +53,10 @@ To access the videos, go to "https://aircocalc-www.createlab.org/pardumps/" and 
 ```sh
 python main.py generate_plume_viz_json
 ```
-To add more dates in the pipeline, edit the genetate_earthtime_data() function in the "main.py" file.
+**Before running large tasks that will take a long time on the CoCalc system, make sure that you notify and talk to system administrators.**
 
-# For your application
+# About the main project
 
-**DO NOT edit the "automate_plume_viz.py" code or others in this project directly.** To use this code for your application, you need to:
-- Go to [the "air-src" folder on CoCalc](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/?session=default) and create a new folder for your project (feel free to copy the code in this repository for your use)
-- Search and read every "IMPORTANT" tag in the "main.py" file
-- Make sure that the share urls you generated have unique identifiers in the EarthTime layers by changing the "prefix" option for the "generate_metadata()" function 
-- If you do not need smell reports in your visualization, change the "add_smell" option for the "generate_metadata()" function to False
-- Change pollution sources in the "run_hysplit()" function
-- If you need to add customized caption or graphs on top of the video frames, edit the "create_video()" function in the "automate_plume_viz.py" file
+**If you work on your own project but not the CREATE Lab's plume visualization project, DO NOT use the following instructions.**
 
-Before running large tasks that will take a long time on the CoCalc system, make sure that you notify and talk to system administrators.
+The main project folder is "/projects/earthtime/air-src/automate-plume-viz" on the hal50 server. For co-workers on the CREATE Lab's plume visualization project, go to the [CoCalc project](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/terminal.term?session=default).
