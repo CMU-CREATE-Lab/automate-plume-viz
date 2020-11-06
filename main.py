@@ -84,7 +84,6 @@ def run_hysplit(sources, o_root, start_d, file_name, o_url=None, num_workers=4):
 
 def download_video_frames(o_url, df_share_url, df_img_url):
     print("Download video frames from the thumbnail server...")
-
     # Make sure that the dates have the hysplit simulation results
     date_has_hysplit = []
     for idx, row in df_share_url.iterrows():
@@ -176,9 +175,10 @@ def main(argv):
 
     # Below is Yen-Chia Hsu's setting, you should not use these parameters
     #o_root = "/projects/earthtime/air-src/automate-plume-viz/data/bin/" # Yen-Chia's example (DO NOT USE)
-    #o_url = "https://aircocalc.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    #video_url = "https://aircocalc.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
+    #o_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    #video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
     #date_list, redo, prefix = get_time_range_list(["2019-03-09", "2019-03-10"], duration=24, offset_hours=3), 1, "plume_"
+    #date_list, redo, prefix = get_start_end_time_list("2019-03-01", "2019-03-12", offset_hours=3), 1, "plume_"
     #date_list, redo, prefix = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3), 1, "plume_"
     #date_list, redo, prefix = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2, "plume_"
     #date_list, redo, prefix = get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3), 0, "plume_"
