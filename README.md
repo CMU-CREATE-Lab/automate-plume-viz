@@ -12,7 +12,7 @@ Change the permission of the folder so that the CoCalc system can read that. (Th
 ```sh
 chmod 777 automate-plume-viz
 ```
-**Please do not edit the code on CoCalc if you want to use the code for your own project (see the next section).** For co-workers on this project, go to the [CoCalc project](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. If you want to use the terminal, run the following first to activate the conda environment on the hal21 server:
+**Please do not edit the code on CoCalc if you want to use the code for your own project (see the next section).** For co-workers on this project, go to the [CoCalc project](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal50 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. If you want to use the terminal, run the following first to activate the conda environment on the hal50 server:
 ```sh
 . /projects/anaconda3/bin/activate
 ```
@@ -47,7 +47,7 @@ cp [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [YOUR_PUBLIC_BIN_PATH]
 # For example:
 cp /projects/earthtime/air-src/automate-plume-viz/data/bin/* /projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/
 ```
-If you process the data on other servers, you need to rsync the particle files back to the hal21 server. On your server, run the following:
+If you process the data on other servers, you need to rsync the particle files back to the hal50 server. On your server, run the following:
 ```sh
 rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [USER_NAME]@hal50.pc.cs.cmu.edu:[YOUR_PUBLIC_BIN_PATH]
 
@@ -66,14 +66,14 @@ Then, create all videos in the "data/rgb/" folder. This step requires [opencv](h
 ```sh
 sh bg.sh python main.py create_all_videos
 ```
-After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access. If you process the data on the hal21 server, use the following command:
+After creating the videos, the videos and other related files will be stored in "automate-plume-viz/data/rgb/" and you need to copy the videos to a place that has public access. If you process the data on the hal50 server, use the following command:
 ```sh
 cp [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [YOUR_PUBLIC_VIDEO_PATH]
 
 # For example:
 cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
-If you process the data on other servers, you need to rsync the data back to the hal21 server. On your server, run the following:
+If you process the data on other servers, you need to rsync the data back to the hal50 server. On your server, run the following:
 ```sh
 rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal50.pc.cs.cmu.edu:[YOUR_PUBLIC_VIDEO_PATH]
 
