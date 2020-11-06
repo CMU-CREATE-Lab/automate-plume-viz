@@ -82,18 +82,20 @@ def run_hysplit(sources, bin_root, start_d, file_name, bin_url=None, num_workers
 
 def download_video_frames(bin_url, df_share_url, df_img_url):
     print("Download video frames from the thumbnail server...")
+
     # Make sure that the dates have the hysplit simulation results
     date_has_hysplit = []
     for idx, row in df_share_url.iterrows():
         fname = "plume_" + row["date"] + ".bin"
         if is_url_valid(bin_url + fname):
             date_has_hysplit.append(row["date"])
-    # TODO: refactor so that skipping file download is here
+
     get_frames(df_img_url[df_img_url["date"].isin(date_has_hysplit)], dir_p="data/rgb/")
 
 
 def create_all_videos(video_root):
     print("Create all videos...")
+
     font_p = "data/font/OpenSans-Regular.ttf"
     for dn in get_all_dir_names_in_folder("data/rgb/"):
         print("Process %s..." % dn)
@@ -113,7 +115,6 @@ def create_all_videos(video_root):
 
 
 def main(argv):
-    """The main function"""
     if len(argv) < 2:
         print("Usage:")
         print("python main.py genetate_earthtime_data")
