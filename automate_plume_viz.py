@@ -460,6 +460,7 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
         reduce_size: if True, will reduce file size using ffmpeg
     """
     print("Process images in %r" % in_dir_p)
+    check_and_create_dir(out_file_p)
     out_file_p_tmp = out_file_p + ".mp4"
     time_list = []
     for fn in get_all_file_names_in_folder(in_dir_p):
@@ -518,11 +519,14 @@ def generate_plume_viz_json(video_url):
     """
     print("Generate the json file for the front-end...")
 
+    # Get the list of available plume videos
+    url_list = get_file_list_from_url(video_url, ext="mp4")
+    time_string = [url.split("/")[6].split(".")[0] for url in url_list]
+    date_obj = [datetime.datetime.strptime(t, "%Y%m%d") for t in time_string]
+
     # Get the number of smell reports in the desired dates
-    time_list = list(map(lambda x: x.timestamp(), start_d.to_pydatetime()))
-    time_list += list(map(lambda x: x.timestamp(), end_d.to_pydatetime()))
-    start_time = int(min(time_list)) - 5000
-    end_time = int(max(time_list)) + 5000
+    start_time = int(min(date_obj).timestamp() - 86400)
+    end_time = int(max(date_obj).timestamp() + 86400)
     smell_pgh_api_url = "https://api.smellpittsburgh.org/api/v2/smell_reports?group_by=day&aggregate=true&smell_value=3%2C4%2C5&start_time=" + str(start_time) + "&end_time=" + str(end_time) + "&state_ids=1&timezone_string=America%252FNew_York"
     smell_counts = None
     try:
@@ -533,22 +537,18 @@ def generate_plume_viz_json(video_url):
     except Exception:
         traceback.print_exc()
 
-    # Get the list of available plume videos
-    video_list = get_file_list_from_url(video_url, ext="mp4")
-
     # Create the json object (for front-end)
-    gp_end_d = end_d.groupby(end_d.year)
+    date_obj = pd.to_datetime(date_obj)
+    gp_year = date_obj.groupby(date_obj.year)
     viz_json = {}
-    for k in gp_end_d:
-        g_json = {"columnNames": ["label", "color", "file_name", "date"], "data": []}
-        for d in sorted(gp_end_d[k].to_pydatetime()):
+    for k in gp_year:
+        g_json = {"columnNames": ["label", "color", "url", "date"], "data": []}
+        for d in sorted(gp_year[k].to_pydatetime()):
             label = d.strftime("%b %d")
-            color = -1 if smell_counts is None else smell_counts[d.strftime("%Y-%m-%d")]
-            vid_fn = d.strftime("%Y%m%d")
-            vid_path = "data/rgb/" + vid_fn + "/" + vid_fn + ".mp4"
-            if os.path.isfile(vid_path):
-                # Only add to json if the file exists
-                g_json["data"].append([label, color, vid_fn + ".mp4", d.strftime("%Y-%m-%d")])
+            ck = d.strftime("%Y-%m-%d")
+            color = -1 if smell_counts is None or ck not in smell_counts else smell_counts[ck]
+            url = video_url + d.strftime("%Y%m%d") + ".mp4"
+            g_json["data"].append([label, color, url, d.strftime("%Y-%m-%d")])
         viz_json[k] = g_json
 
     # Save the json for the front-end visualization website
