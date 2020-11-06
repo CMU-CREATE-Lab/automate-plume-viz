@@ -148,7 +148,7 @@ def main(argv):
     date_list = None
 
     # IMPORTANT: specify an unique string to prevent your data from mixing with others
-    # Check the generate_metadata function docstring in automate_plume_viz.py for details
+    # IMPORTANT: do not set prefix to "plume_" which is used by the CREATE Lab's project
     prefix = None
 
     # IMPORTANT: specify a list of pollution sources
@@ -156,31 +156,47 @@ def main(argv):
     # sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50)]
     sources = []
 
-    # IMPORTANT: below are the parameters that you can use by default
-    # Check the generate_metadata function docstring in automate_plume_viz.py for details
+    # IMPORTANT: specify the location of the map that you want to show, using lat, lng, and zoom
+    # ...(lat means latitude, lng means longitude, zoom means the zoom level of the Google Map)
+    lat, lng, zoom = None, None, None
+
+    # IMPORTANT: if you do not want to show smell reports, set add_smell to False
     add_smell = True
-    lat = "40.42532"
-    lng = "-79.91643"
-    zoom = "9.233"
-    credits = "CREATE Lab"
-    category = "Plume Viz"
-    name_prefix = "PARDUMP "
+
+    # IMPORTANT: if you want the thumbnail server to re-render video frames (e.g., for experiments), increase redo
     redo = 0
+
+    # Set the number of partitions of the URL for the thumbnail server to process in parallel
     url_partition = 4
+
+    # Set the prefix of the names of the EarthTime layers
+    # ...(will only affect the layers shown on the EarthTime system)
+    name_prefix = "PARDUMP "
+
+    # Set the credit of the EarthTime layer
+    # ...(will only affect the layers shown on the EarthTime system)
+    credits = "CREATE Lab"
+
+    # Set the category of the EarthTime layer
+    # ...(will only affect the layers shown on the EarthTime system)
+    category = "Plume Viz"
+
+    # Set the size of the output video (for both width and height)
     img_size = 540
 
+    # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
-    # Below is Yen-Chia Hsu's setting, you should not use these parameters
     #bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
     #video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
     #bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
     #video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
-    #date_list, redo, prefix = get_time_range_list(["2019-03-09", "2019-03-10"], duration=24, offset_hours=3), 1, "plume_"
-    #date_list, redo, prefix = get_start_end_time_list("2019-03-01", "2019-03-12", offset_hours=3), 1, "plume_"
-    #date_list, redo, prefix = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3), 1, "plume_"
-    #date_list, redo, prefix = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2, "plume_"
-    #date_list, redo, prefix = get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3), 0, "plume_"
+    #prefix, lat, lng, zoom = "plume_", "40.42532", "-79.91643", "9.233"
     #sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+    #date_list, redo = get_time_range_list(["2019-03-09", "2019-03-10"], duration=24, offset_hours=3), 1
+    #date_list, redo = get_start_end_time_list("2019-03-01", "2019-03-12", offset_hours=3), 1
+    #date_list, redo = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3), 1
+    #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
+    #date_list, redo = get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3), 0
 
     # Sanity checks
     assert(bin_root is not None), "you need to edit the path for storing hysplit particle files"
@@ -190,6 +206,9 @@ def main(argv):
     assert(date_list is not None),"you need to specify the dates to process"
     assert(prefix is not None),"you need to specify the prefix of the unique share url"
     assert(len(sources) > 0),"you need to specify the pollution sources"
+    assert(lat is not None),"you need to specify the latitude of the map"
+    assert(lng is not None),"you need to specify the longitude of the map"
+    assert(zoom is not None),"you need to specify the zoom level of the map"
 
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the generated layers to the EarthTime layers CSV file
