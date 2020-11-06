@@ -2,9 +2,9 @@ This repository hosts the code for generating videos that show the visualization
 
 # Setup the tool
 
-SSH to the hal21 server and clone this repository. (This step is only for the CoCalc system administrator.)
+SSH to the hal50 server and clone this repository. (This step is only for the CoCalc system administrator.)
 ```sh
-ssh [USER_NAME]@hal21.andrew.cmu.edu
+ssh [USER_NAME]@hal50.pc.cs.cmu.edu
 cd /projects/earthtime/air-src/
 git clone https://github.com/CMU-CREATE-Lab/automate-plume-viz.git
 ```
@@ -12,7 +12,7 @@ Change the permission of the folder so that the CoCalc system can read that. (Th
 ```sh
 chmod 777 automate-plume-viz
 ```
-**Please do not edit the code on CoCalc if you want to use the code for your own project (see the next section).** For co-workers on this project, go to the [CoCalc project](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. If you want to use the terminal, run the following first to activate the conda environment on the hal21 server:
+**Please do not edit the code on CoCalc if you want to use the code for your own project (see the next section).** For co-workers on this project, go to the [CoCalc project](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/terminal.term?session=default). You can SSH to the hal21 server and use the Vim editor to write code. Or, another way is to go to the [CoCalc page that has the code](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/automate_plume_viz.py?session=default), and edit the code using the CoCalc interface. If you want to use the terminal, run the following first to activate the conda environment on the hal21 server:
 ```sh
 . /projects/anaconda3/bin/activate
 ```
@@ -40,19 +40,19 @@ screen -X quit
 # Keep looking at the screen log
 tail -f screenlog.0
 ```
-Next, move the created particle files to the folder that allows public access, so that the thumbnail server can read them. If you process the data on the hal21 server, use the following command:
+Next, move the created particle files to the folder that allows public access, so that the thumbnail server can read them. If you process the data on the hal50 server, use the following command:
 ```sh
 cp [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [YOUR_PUBLIC_BIN_PATH]
 
 # For example:
-cp /projects/earthtime/air-src/automate-plume-viz/data/bin/* /projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
+cp /projects/earthtime/air-src/automate-plume-viz/data/bin/* /projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/
 ```
 If you process the data on other servers, you need to rsync the particle files back to the hal21 server. On your server, run the following:
 ```sh
-rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_BIN_PATH]
+rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/bin/* [USER_NAME]@hal50.pc.cs.cmu.edu:[YOUR_PUBLIC_BIN_PATH]
 
 # For example:
-rsync -av /projects/earthtime/air-src/automate-plume-viz/data/bin/* [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/bin/
+rsync -av /projects/earthtime/air-src/automate-plume-viz/data/bin/* [USER_NAME]@hal50.pc.cs.cmu.edu:/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/
 ```
 Then, call the thumbnail server to process the video frames. By default, the script uses 4 workers in parallel. Make sure that you ask Paul Dille about whether the thumbnail server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days). Notice that if you forget to copy and paste the EarthTime layers, this step will fail.
 ```sh
@@ -71,14 +71,14 @@ After creating the videos, the videos and other related files will be stored in 
 cp [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [YOUR_PUBLIC_VIDEO_PATH]
 
 # For example:
-cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
+cp /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 /projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 If you process the data on other servers, you need to rsync the data back to the hal21 server. On your server, run the following:
 ```sh
-rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:[YOUR_PUBLIC_VIDEO_PATH]
+rsync -av [YOUR_PROJECT_PATH]/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal50.pc.cs.cmu.edu:[YOUR_PUBLIC_VIDEO_PATH]
 
 # For example:
-rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal21.andrew.cmu.edu:/projects/cocalc-www.createlab.org/pardumps/plumeviz/video/
+rsync -av /projects/earthtime/air-src/automate-plume-viz/data/rgb/*/*.mp4 [USER_NAME]@hal50.pc.cs.cmu.edu:/projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/
 ```
 To access the videos, go to "https://cocalc-www.createlab.org/pardumps/" and select the folders or files. Finally, generate the json file for the [front-end plume visualization website](https://github.com/CMU-CREATE-Lab/plume-viz-website). You need to copy and paste the "data/plume_viz.json" file to the front-end website.
 ```sh
@@ -89,7 +89,7 @@ To add more dates in the pipeline, edit the genetate_earthtime_data() function i
 # For your application
 
 **DO NOT edit the "automate_plume_viz.py" code or others in this project directly.** To use this code for your application, you need to:
-- Go to [the "air-src" folder on CoCalc](https://cocalc.createlab.org:8443/projects/9ab71616-fcde-4524-bf8f-7953c669ebbb/files/air-src/?session=default) and create a new folder for your project (feel free to copy the code in this repository for your use)
+- Go to [the "air-src" folder on CoCalc](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/?session=default) and create a new folder for your project (feel free to copy the code in this repository for your use)
 - Search and read every "IMPORTANT" tag in the "main.py" file
 - Make sure that the share urls you generated have unique identifiers in the EarthTime layers by changing the "prefix" option for the "generate_metadata()" function 
 - If you do not need smell reports in your visualization, change the "add_smell" option for the "generate_metadata()" function to False
