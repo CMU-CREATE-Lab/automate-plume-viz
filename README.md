@@ -1,5 +1,7 @@
 This repository hosts the code for generating videos that show the visualizations of [smell reports](https://smellpgh.org/) and forward dispersion simulation (using the [HYSPLIT model](https://www.ready.noaa.gov/HYSPLIT.php)). For getting wind information, you may want to check [WindNinja](https://www.firelab.org/project/windninja).
 
+When contributing code to this repository, please follow the [PEP8 style](https://www.python.org/dev/peps/pep-0008/) in code formating (e.g., empty lines between functions) and documentation (e.g., docstring). Also, check the [Python Anti-Patterns](https://quantifiedcode.github.io/python-anti-patterns/index.html).
+
 # Setup the tool
 Go to [the "air-src" folder on CoCalc](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/?session=default) and create a new folder for your project. Or you can SSH to the hal50 server and clone this repository.
 ```sh
