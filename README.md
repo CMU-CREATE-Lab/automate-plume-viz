@@ -19,7 +19,7 @@ You can SSH to the hal50 server and use the Vim editor to write code. Or you can
 ```
 **Before you start, read every "IMPORTANT" tag in the "main.py" file carefully.** You need to specify several variables in that file. For example, the path to store files, the url to access files, the dates that you want to process, the information about the pollution source, the location of the map, and parameters of the hysplit model.
 
-To begin the pipeline, run the following command to generate the EarthTime layers. This will create several files in the "data/" folder. You will need to open the "earth_time_layer.csv" file and copy the rows to the "[DAVOS2019 EarthTime Waypoints and CSV Layers](https://docs.google.com/spreadsheets/d/1zbXFtyevXqfZolxVPNhojZn7y_zxofbe_4UxYmdXp8k/edit#gid=870361385)" Google document. Ask Randy Sargent or Paul Dille for the permission to edit this file, and make sure you understand what each column means. 
+To begin the pipeline, run the following command to generate the EarthTime layers. This will create several files in the "data/" folder. **You will need to open the "earth_time_layer.csv" file and copy the rows to the "[DAVOS2019 EarthTime Waypoints and CSV Layers](https://docs.google.com/spreadsheets/d/1zbXFtyevXqfZolxVPNhojZn7y_zxofbe_4UxYmdXp8k/edit#gid=870361385)" Google document**. Ask Randy Sargent or Paul Dille for the permission to edit this file, and make sure you understand what each column means. 
 ```sh
 python main.py genetate_earthtime_data
 ```
@@ -47,7 +47,7 @@ Then, call the thumbnail server to process the video frames. By default, the scr
 ```sh
 sh bg.sh python main.py download_video_frames
 ```
-Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files in the "data/rgb/" folder.
+Then, create all videos in the "data/rgb/" folder. This step requires [opencv](https://github.com/skvark/opencv-python) and [ffmpeg](https://github.com/FFmpeg/FFmpeg) packages (ask the CoCalc system administrator to install these packages). Notice that the code will skip the dates that already have corresponding video files. To re-generate the video, you need to delete the video files.
 ```sh
 sh bg.sh python main.py create_all_videos
 ```
@@ -59,6 +59,6 @@ python main.py generate_plume_viz_json
 
 # About the main project
 
-**If you work on your own project but not the CREATE Lab's plume visualization project, DO NOT use the following instructions.**
+**DO NOT use the following instructions if you work on your own project but not the CREATE Lab's plume visualization project.**
 
 The main project folder is "/projects/earthtime/air-src/automate-plume-viz" on the hal50 server. For co-workers on the CREATE Lab's plume visualization project, go to the [CoCalc project](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/). You will see a list of files. The main script of this project is "automate_plume_viz.py" and you need to run it using the [terminal in the CoCalc system](https://aircocalc.createlab.org:8443/projects/13e67e6d-d6b5-42f2-99ff-cda6431e4c2f/files/air-src/automate-plume-viz/terminal.term?session=default).
