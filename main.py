@@ -11,7 +11,7 @@ from cached_hysplit_run_lib import DispersionSource
 from automate_plume_viz import get_time_range_list, generate_metadata, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video, generate_plume_viz_json, get_start_end_time_list
 
 
-def genetate_earthtime_data(date_list, bin_url, url_partition, img_size, redo, prefix,
+def generate_earthtime_data(date_list, bin_url, url_partition, img_size, redo, prefix,
         add_smell, lat, lng, zoom, credits,  category, name_prefix):
     print("Generate EarthTime data...")
 
@@ -117,7 +117,7 @@ def create_all_videos(video_root):
 def main(argv):
     if len(argv) < 2:
         print("Usage:")
-        print("python main.py genetate_earthtime_data")
+        print("python main.py generate_earthtime_data")
         print("python main.py run_hysplit")
         print("python main.py download_video_frames")
         print("python main.py create_all_videos")
@@ -214,8 +214,8 @@ def main(argv):
     # Run the following line first to generate EarthTime layers
     # IMPORTANT: you need to copy and paste the generated layers to the EarthTime layers CSV file
     # ...check the README file about how to do this
-    if argv[1] in ["genetate_earthtime_data", "run_hysplit", "download_video_frames"]:
-        start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(date_list, bin_url,
+    if argv[1] in ["generate_earthtime_data", "run_hysplit", "download_video_frames"]:
+        start_d, end_d, file_name, df_share_url, df_img_url = generate_earthtime_data(date_list, bin_url,
                 url_partition, img_size, redo, prefix, add_smell, lat, lng, zoom, credits, category, name_prefix)
 
     # Then run the following to create hysplit simulation files

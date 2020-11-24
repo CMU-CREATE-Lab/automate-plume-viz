@@ -21,7 +21,7 @@ You can SSH to the hal50 server and use the Vim editor to write code. Or you can
 
 To begin the pipeline, run the following command to generate the EarthTime layers. This will create several files in the "data/" folder. **You will need to open the "earth_time_layer.csv" file and copy the rows to the "[DAVOS2019 EarthTime Waypoints and CSV Layers](https://docs.google.com/spreadsheets/d/1zbXFtyevXqfZolxVPNhojZn7y_zxofbe_4UxYmdXp8k/edit#gid=870361385)" Google document**. Ask Randy Sargent or Paul Dille for the permission to edit this file, and make sure you understand what each column means. 
 ```sh
-python main.py genetate_earthtime_data
+python main.py generate_earthtime_data
 ```
 Next, run the hysplit simulation and generate the particle files. By default, the script uses 4 workers in parallel. Make sure that you ask Randy Sargent about whether the CoCalc server is OK before running this command. Depending on the server condition, you may need to reduce the number of workers. This step uses a lot of CPU resources and takes a very long time (hours and days). This command will run a [screen](https://www.gnu.org/software/screen/manual/html_node/index.html) at the background.
 ```sh
