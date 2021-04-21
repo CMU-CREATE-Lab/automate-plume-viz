@@ -408,7 +408,10 @@ class CachedDispersionRun:
             if not os.path.exists(fullPath):
                 if isReformat:
                     linkEnd = dt.strftime('%Y%m%d_%H-') + str(dt.hour + 5).zfill(2) + '_hrrr'
-                    download_file('https://storage.googleapis.com/high-resolution-rapid-refresh/noaa_arl_formatted/' + linkEnd, fullPath)
+                    fileDownloaded = download_file('https://storage.googleapis.com/high-resolution-rapid-refresh/noaa_arl_formatted/' + linkEnd, fullPath)
+                    if not fileDownloaded:
+                        self.log('File not found in the Google Cloud Platform HRRR archive. Trying ARL FTP server... ')
+                        download_file('ftp://arlftp.arlhq.noaa.gov/pub/archives/hrrr/' + linkEnd, fullPath)
                 else:
                     download_file('ftp://arlftp.arlhq.noaa.gov/pub/archives/hrrr.v1/' + name, fullPath)
             fNames.append(fullPath)

@@ -6,6 +6,8 @@ The main script for processing the plume visualization videos
 
 import sys, os, time
 import pandas as pd
+from datetime import date
+from datetime import timedelta
 from multiprocessing.dummy import Pool
 from cached_hysplit_run_lib import DispersionSource
 from automate_plume_viz import get_time_range_list, generate_metadata, simulate_worker, is_url_valid, get_frames, get_all_dir_names_in_folder, unzip_and_rename, create_video, generate_plume_viz_json, get_start_end_time_list
@@ -98,14 +100,14 @@ def create_all_videos(video_root):
 
     font_p = "data/font/OpenSans-Regular.ttf"
     for dn in get_all_dir_names_in_folder("data/rgb/"):
-        print("Process %s..." % dn)
         in_dir_p = "data/rgb/" + dn + "/"
         # Unzip and rename video frames
         frame_dir_p = in_dir_p + "frames/"
         if not os.path.isdir(frame_dir_p): # skip if video frames were unzipped
-            unzip_and_rename(in_dir_p, frame_dir_p, offset_hours=3)
-        else:
-            print("Skip unzipping frames since they exist...")
+            print("Process %s..." % dn)
+            status = unzip_and_rename(in_dir_p, frame_dir_p, offset_hours=3)
+            if (status == 1):
+                continue
         # Create video
         video_file_p = video_root + dn + ".mp4"
         if not os.path.isfile(video_file_p): # skip if the video exists
@@ -187,17 +189,20 @@ def main(argv):
 
     # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
-    #bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    #video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
-    #bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    #video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
-    #prefix, lat, lng, zoom = "plume_", "40.42532", "-79.91643", "9.233"
-    #sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
-    #date_list, redo = get_time_range_list(["2019-03-09", "2019-03-10"], duration=24, offset_hours=3), 1
-    #date_list, redo = get_start_end_time_list("2019-03-01", "2019-03-12", offset_hours=3), 1
-    #date_list, redo = get_start_end_time_list("2019-04-01", "2019-05-01", offset_hours=3), 1
+    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
+    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
+    prefix, lat, lng, zoom = "plume_", "40.42532", "-79.91643", "9.233"
+    sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
+    #date_list, redo = get_time_range_list(["2021-04-14", "2019-04-15"], duration=18, offset_hours=8), 1
+    #date_list, redo = get_start_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
+    date_list, redo = get_start_end_time_list("2021-04-14", "2021-04-15", offset_hours=3), 1
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
-    #date_list, redo = get_start_end_time_list("2020-01-01", "2020-08-01", offset_hours=3), 0
+    #date_list, redo = get_start_end_time_list("2021-04-04", "2021-04-05", offset_hours=3), 3
+    #today = date.today().strftime("%Y-%m-%d")
+    #yesterday = (date.today() - timedelta(days = 1)).strftime("%Y-%m-%d")
+    #date_list, redo = get_start_end_time_list(yesterday,today,offset_hours=3), 0
 
     # Sanity checks
     assert(bin_root is not None), "you need to edit the path for storing hysplit particle files"

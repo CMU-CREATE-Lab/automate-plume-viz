@@ -5,8 +5,10 @@ This code was taken and edited from the following path on hal21 server (on Oct 2
 """
 
 
-import os, requests, concurrent, concurrent.futures, datetime, math, shutil, subprocess, sys, time, traceback
+import os, requests, concurrent, concurrent.futures, datetime, math, shutil, subprocess, sys, time, traceback, urllib
 from requests.exceptions import RequestException
+from contextlib import closing
+
 try:
     import dateutil, dateutil.tz
 except:
@@ -69,19 +71,26 @@ def download_file(url, filename, timeout=3600):
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
         sys.stdout.write('Downloading %s to %s\n' % (url, filename))
-
-        try:
-            response = requests.Session().get(url, timeout=timeout)
-            if(response.status_code!=200):
-                print('Error response, code = %d, body = %s' % (response.status_code, response.text))
+        
+        if url.startswith('ftp'):
+            with closing(urllib.request.urlopen(url,timeout=timeout)) as r:
+                with open(filename + '.tmp', 'wb') as f:
+                    shutil.copyfileobj(r, f)
+            sys.stdout.write('Done, wrote file to %s\n' % (filename))
+        else:
+        
+            try:
+                response = requests.Session().get(url, timeout=timeout)
+                if(response.status_code!=200):
+                    print('Error response, code = %d, body = %s' % (response.status_code, response.text))
+                    return False
+            except RequestException as e:
+                sys.stdout.write("Couldn't read %s because %s" % (url, e))
                 return False
-        except RequestException as e:
-            sys.stdout.write("Couldn't read %s because %s" % (url, e))
-            return False
 
-        open(filename + '.tmp', "wb").write(response.content)
+            open(filename + '.tmp', "wb").write(response.content)
+            sys.stdout.write('Done, wrote %d bytes to %s\n' % (len(response.content), filename))
         os.rename(filename + '.tmp', filename)
-        sys.stdout.write('Done, wrote %d bytes to %s\n' % (len(response.content), filename))
         return True
 
 

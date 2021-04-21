@@ -379,12 +379,18 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
     for fn in get_all_file_names_in_folder(in_dir_p):
         if ".zip" not in fn: continue
         num_partitions += 1
+        
+    if(num_partitions == 0):
+        print("unzip FAILED for %s: no zip archives in folder. Skipping this day..." % in_dir_p)
+        return 1
 
     # Unzip each partition
     start_dt_str = re.findall(r"\d{8}", in_dir_p)[0]
     start_dt = datetime.datetime.strptime(start_dt_str, "%Y%m%d")
     start_dt = pytz.timezone("US/Eastern").localize(start_dt)
     start_dt = start_dt - pd.Timedelta(offset_hours, unit="h")
+    
+    
     time_span = pd.Timedelta(24 / num_partitions, unit="h")
     num_files_per_partition = 0
     for i in range(num_partitions):
@@ -428,6 +434,7 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
             os.chmod(out_dir_p + fn, 0o777)
 
     print("DONE")
+    return 0
 
 
 def del_dir(dir_p):
