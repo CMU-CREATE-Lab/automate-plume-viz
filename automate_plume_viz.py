@@ -43,7 +43,7 @@ def get_start_end_time_list(start_date_eastern, end_date_eastern, offset_hours=3
 
     Input:
         start_date_eastern: the date to start in EST time, e.g., "2019-01-01"
-        end_date_eastern: the date to start in EST time, e.g., "2020-01-01"
+        end_date_eastern: the date to end in EST time, e.g., "2020-01-01"
         offset_hour: time offset in hours, for example, if this is 3, then it starts from 12-3=9 p.m. instead of 12 a.m.
 
     Output:
@@ -212,7 +212,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
             cmd = hysplit_root + "exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
             if pdump.find('.txt') == -1:
                 pdump_txt_list.append(pdump+".txt")
-            print("Run Hysplit for %s" % pdump)
+            print("par2asc for %s" % pdump)
             subprocess_check(cmd)
         else:
             pdump_txt = findInFolder(folder,'PARDUMP*.txt')

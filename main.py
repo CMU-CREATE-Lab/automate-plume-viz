@@ -196,8 +196,8 @@ def main(argv):
     prefix, lat, lng, zoom = "plume_", "40.42532", "-79.91643", "9.233"
     sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
     #date_list, redo = get_time_range_list(["2021-04-14", "2019-04-15"], duration=18, offset_hours=8), 1
-    #date_list, redo = get_start_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
-    date_list, redo = get_start_end_time_list("2021-04-14", "2021-04-15", offset_hours=3), 1
+    #date_list, redo = get_start:_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
+    date_list, redo = get_start_end_time_list("2021-05-10", "2021-05-11", offset_hours=3), 0
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
     #date_list, redo = get_start_end_time_list("2021-04-04", "2021-04-05", offset_hours=3), 3
     #today = date.today().strftime("%Y-%m-%d")
