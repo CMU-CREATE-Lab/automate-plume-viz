@@ -75,7 +75,7 @@ def get_time_range_list(start_date_str_list, duration=24, offset_hours=3):
     return (start_d, end_d)
 
 
-def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
+def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, img_size=540, redo=0,
         prefix="banana_", add_smell=True, lat="40.42532", lng="-79.91643", zoom="9.233", credits="CREATE Lab",
         category="Plume Viz", name_prefix="PARDUMP ", file_path="https://cocalc-www.createlab.org/test/"):
     """
@@ -84,6 +84,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     Input:
         start_d: a pandas DatetimeIndex object, indicating the list of starting times
         end_d: a pandas DatetimeIndex object, indicating the list of ending times
+        video_start_delay_hrs: number of hours that the model should run before the video starts
         url_partition: the number of partitions for the thumbnail server request for getting images of video frames
         img_size: the size of the output video (e.g, 540 means 540px for both width and height)
         redo: this is a number to force the server to avoid using the cached file
@@ -110,6 +111,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     # Create rows in the EarthTime layer document
     df_template = pd.read_csv("data/earth_time_layer_template.csv")
     df_layer = pd.concat([df_template]*len(start_d), ignore_index=True)
+    start_d = start_d + pd.DateOffset(hours=video_start_delay_hrs)
     file_name = prefix + end_d.strftime("%Y%m%d")
     start_d_utc = start_d.tz_convert("UTC")
     end_d_utc = end_d.tz_convert("UTC")
@@ -134,7 +136,7 @@ def generate_metadata(start_d, end_d, url_partition=4, img_size=540, redo=0,
     # NOTE: this part is for testing the new features that override the previous ones
     df_layer["Vertex Shader"] = "WebGLVectorTile2.particleAltFadeVertexShader"
     df_layer["Fragment Shader"] = "WebGLVectorTile2.particleAltFadeFragmentShader"
-    et_root_url = "https://headless-rsargent.earthtime.org/#"
+    et_root_url = "https://headless-rsargent.earthtime.org/#" #CHANGE TO JUST HEADLESS
 
     for i in range(len(start_d_utc)):
         sdt = start_d_utc[i]
@@ -178,7 +180,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     Input:
         start_time_eastern: for different dates, use format "2020-03-30 00:00"
         o_file: file path to save the simulation result, e.g., "/projects/cocalc-www.createlab.org/pardumps/test.bin"
-        sources: location of the sources of pollution, in an array of DispersionSource objects
+        sources: dict containing location of the sources of pollution (DispersionSource objects), color, and ratio of points to filter
         emit_time_hrs: affects the emission time for running each Hysplit model
         duration: total time (in hours) for the simulation, use 24 for a total day, use 12 for testing
         filter_ratio: the ratio that the points will be dropped (e.g., 0.8 means dropping 80% of the points)
@@ -196,7 +198,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     path_list = []
     for source in sources:
         path_list += getMultiHourDispersionRunsParallel(
-                source,
+                source["dispersion_source"],
                 parse_eastern(start_time_eastern),
                 emit_time_hrs,
                 duration,
@@ -232,8 +234,10 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         [[250, 255, 99],[99, 255, 206],[206, 92, 247]],
         [[250, 255, 99],[99, 255, 206],[206, 92, 247],[255, 119, 0]]
     ]
+    cmaps = [source["color"] for source in sources]
+    filter_out_ratios = [source["filter_out"] for source in sources]
     print("Creating %s" % o_file)
-    create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_ratio=filter_ratio)
+    create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_out_ratios=filter_out_ratios)
     print("Created %s" % o_file)
     os.chmod(o_file, 0o777)
 
@@ -305,6 +309,7 @@ def get_frames(df_img_url, dir_p="data/rgb/", num_try=0, num_workers=4):
         return
     num_errors = 0
     arg_list = []
+
     # Construct the lists of urls and file paths
     for dt, df in df_img_url.groupby("date"):
         img_url_list = list(df["img_url"])
@@ -481,7 +486,7 @@ def create_video(in_dir_p, out_file_p, font_p, fps=30, reduce_size=False):
         draw = ImageDraw.Draw(img)
         font = ImageFont.truetype(font_p, 40)
         dt = datetime.datetime.fromtimestamp(t).astimezone(pytz.timezone("US/Eastern"))
-        caption = dt.strftime("%Y-%m-%d,  %H:%M")
+        caption = dt.strftime("%Y-%m-%d,  %I:%M%p")
         draw.text((10, 3), caption, (0,255,255), font=font)
         video.write(cv.cvtColor(np.array(img), cv.COLOR_RGB2BGR))
     cv.destroyAllWindows()

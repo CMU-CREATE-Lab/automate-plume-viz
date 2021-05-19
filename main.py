@@ -14,14 +14,15 @@ from automate_plume_viz import get_time_range_list, generate_metadata, simulate_
 
 
 def genetate_earthtime_data(date_list, bin_url, url_partition, img_size, redo, prefix,
-        add_smell, lat, lng, zoom, credits,  category, name_prefix):
+        add_smell, lat, lng, zoom, credits,  category, name_prefix, video_start_delay_hrs=0):
     print("Generate EarthTime data...")
 
     # Specify the starting and ending time
     df_layer, df_share_url, df_img_url, file_name, start_d, end_d = None, None, None, None, None, None
     sd, ed = date_list[0], date_list[1]
-    dl, ds, di, fn = generate_metadata(sd, ed, url_partition=url_partition, img_size=img_size,
-            redo=redo, prefix=prefix, add_smell=add_smell, lat=lat, lng=lng, zoom=zoom, credits=credits,
+    dl, ds, di, fn = generate_metadata(sd, ed, video_start_delay_hrs=video_start_delay_hrs, 
+            url_partition=url_partition, img_size=img_size, redo=redo, prefix=prefix,
+            add_smell=add_smell, lat=lat, lng=lng, zoom=zoom, credits=credits,
             category=category, name_prefix=name_prefix, file_path=bin_url)
     if df_layer is None:
         df_layer, df_share_url, df_img_url, file_name, start_d, end_d = dl, ds, di, fn, sd, ed
@@ -82,16 +83,16 @@ def run_hysplit(sources, bin_root, start_d, file_name, bin_url=None, num_workers
     pool.join()
 
 
-def download_video_frames(bin_url, df_share_url, df_img_url):
+def download_video_frames(bin_url, end_d, df_img_url, prefix="plume_"):
     print("Download video frames from the thumbnail server...")
 
     # Make sure that the dates have the hysplit simulation results
     date_has_hysplit = []
-    for idx, row in df_share_url.iterrows():
-        fname = "plume_" + row["date"] + ".bin"
+    for ed in end_d.strftime("%Y%m%d"):
+        fname = prefix + ed + ".bin"
         if is_url_valid(bin_url + fname):
-            date_has_hysplit.append(row["date"])
-
+            date_has_hysplit.append(ed)
+            
     get_frames(df_img_url[df_img_url["date"].isin(date_has_hysplit)], dir_p="data/rgb/")
 
 
@@ -169,6 +170,9 @@ def main(argv):
     # IMPORTANT: if you want the thumbnail server to re-render video frames (e.g., for experiments), increase redo
     redo = 0
 
+    # If you want the video to start after the model starts, specify the delay in hours
+    video_start_delay_hrs = 2
+
     # Set the number of partitions of the URL for the thumbnail server to process in parallel
     url_partition = 4
 
@@ -189,20 +193,40 @@ def main(argv):
 
     # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
-    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
-    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
-    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
-    prefix, lat, lng, zoom = "plume_", "40.42532", "-79.91643", "9.233"
-    sources = [DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50), DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50), DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50), DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50)]
-    #date_list, redo = get_time_range_list(["2021-04-14", "2019-04-15"], duration=18, offset_hours=8), 1
+    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/" # Yen-Chia's example (DO NOT USE)
+    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/" # Yen-Chia's example (DO NOT USE)
+    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/" # Yen-Chia's example (DO NOT USE)
+    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/" # Yen-Chia's example (DO NOT USE)
+    prefix, lat, lng, zoom = "plume_noburst_", "40.42532", "-79.91643", "9.233"
+    sources = [
+        {
+            "dispersion_source":DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
+            "color": [250, 255, 99],
+            "filter_out": .859
+        },
+        {
+            "dispersion_source":DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
+            "color": [99, 255, 206],
+            "filter_out": .9147
+        },
+        {
+            "dispersion_source":DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
+            "color": [206, 92, 247],
+            "filter_out": .7
+        },
+        {
+            "dispersion_source":DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50),
+            "color": [255, 119, 0],
+            "filter_out": .9351
+        }
+        ]
+    date_list, redo = get_time_range_list(["2021-04-06"], duration=26, offset_hours=7), 0
     #date_list, redo = get_start:_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
-    date_list, redo = get_start_end_time_list("2021-05-10", "2021-05-11", offset_hours=3), 0
+    #date_list, redo = get_start_end_time_list("2021-04-08", "2021-04-09", offset_hours=3), 5
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
     #date_list, redo = get_start_end_time_list("2021-04-04", "2021-04-05", offset_hours=3), 3
     #today = date.today().strftime("%Y-%m-%d")
-    #yesterday = (date.today() - timedelta(days = 1)).strftime("%Y-%m-%d")
-    #date_list, redo = get_start_end_time_list(yesterday,today,offset_hours=3), 0
+
 
     # Sanity checks
     assert(bin_root is not None), "you need to edit the path for storing hysplit particle files"
@@ -220,8 +244,9 @@ def main(argv):
     # IMPORTANT: you need to copy and paste the generated layers to the EarthTime layers CSV file
     # ...check the README file about how to do this
     if argv[1] in ["genetate_earthtime_data", "run_hysplit", "download_video_frames"]:
-        start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(date_list, bin_url,
-                url_partition, img_size, redo, prefix, add_smell, lat, lng, zoom, credits, category, name_prefix)
+        start_d, end_d, file_name, df_share_url, df_img_url = genetate_earthtime_data(date_list, 
+                bin_url, url_partition, img_size, redo, prefix, add_smell, lat, lng, zoom,
+                credits, category, name_prefix, video_start_delay_hrs)
 
     # Then run the following to create hysplit simulation files
     # IMPORTANT: after creating the bin files, you need to move them to the correct folder for public access
@@ -236,7 +261,7 @@ def main(argv):
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
     # IMPORTANT: if you forgot to copy the bin files to the correct folder, this step will not do anything
     if argv[1] == "download_video_frames":
-        download_video_frames(bin_url, df_share_url, df_img_url)
+        download_video_frames(bin_url, end_d, df_img_url, prefix)
 
     # Then, create all videos
     # IMPORTANT: after creating the video files, you need to move them to the correct folder for public access

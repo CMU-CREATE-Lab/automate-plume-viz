@@ -133,22 +133,29 @@ def create_bin(fnames, o_file, colormap):
     points = []
 
 
-def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duration, filter_ratio=0.8):
+def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duration, filter_out_ratios=0.8):
     """
     Coloring based on source
-    filter_ratio=0.8 means that 80% of the points will be dropped
+    filter_out_ratios=0.8 means that 80% of the points will be dropped. if specified as a dict, filter ratios are applied per source.
     with_size=True means visualizing puffs instead of particles
     """
     runTimeHrs = len(fnames) / numSources
-    print("Only use %.2f of all the points to reduce file size" % (1-filter_ratio))
+
+    filter_dict = False
+    if type(filter_out_ratios) == list:
+        assert len(filter_out_ratios) == numSources
+        filter_dict = True
+
+    print("Only use %s of all the points to reduce file size" % filter_out_ratios)
     all_points = []
     
     maxWorkers = 10
     pool = SimpleProcessPoolExecutor(maxWorkers)
     for i, fname in enumerate(fnames):
         src = i / runTimeHrs
-        rgb = cmaps[numSources - 1][int(src)]
-        pool.submit(parse_pardump,fname,rgb,filter_ratio=filter_ratio,with_size=with_size)
+        rgb = cmaps[int(src)]
+        filter_out = filter_out_ratios[int(src)] if filter_dict else filter_out_ratios
+        pool.submit(parse_pardump,fname,rgb,filter_ratio=filter_out,with_size=with_size)
         #
     all_points = pool.shutdown()
     #
