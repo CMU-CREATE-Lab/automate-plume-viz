@@ -111,10 +111,10 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
     # Create rows in the EarthTime layer document
     df_template = pd.read_csv("data/earth_time_layer_template.csv")
     df_layer = pd.concat([df_template]*len(start_d), ignore_index=True)
-    start_d = start_d + pd.DateOffset(hours=video_start_delay_hrs)
-    file_name = prefix + end_d.strftime("%Y%m%d")
-    start_d_utc = start_d.tz_convert("UTC")
+    vid_start_d = start_d + pd.DateOffset(hours=video_start_delay_hrs)
+    start_d_utc = vid_start_d.tz_convert("UTC")
     end_d_utc = end_d.tz_convert("UTC")
+    file_name = prefix + start_d_utc.strftime("%Y%m%d%H%M") + "_" + end_d_utc.strftime("%Y%m%d%H%M")
     df_layer["Start date"] = start_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["End date"] = end_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["Share link identifier"] = file_name
@@ -136,7 +136,7 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
     # NOTE: this part is for testing the new features that override the previous ones
     df_layer["Vertex Shader"] = "WebGLVectorTile2.particleAltFadeVertexShader"
     df_layer["Fragment Shader"] = "WebGLVectorTile2.particleAltFadeFragmentShader"
-    et_root_url = "https://headless-rsargent.earthtime.org/#" #CHANGE TO JUST HEADLESS
+    et_root_url = "https://headless.earthtime.org/#" 
 
     for i in range(len(start_d_utc)):
         sdt = start_d_utc[i]
@@ -144,11 +144,13 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
         # Add the original url
         sdt_str = sdt.strftime("%Y%m%d%H%M%S")
         edt_str = edt.strftime("%Y%m%d%H%M%S")
-        date_str = sdt_str[:8]
+        #date_str = sdt_str[:8]
+        date_str = sdt_str[:12] + "_" + edt_str[:12]
         bt = "bt=" + sdt_str + "&"
         et = "et=" + edt_str + "&"
         if add_smell:
-            l = "l=bdrk_detailed,smell_my_city_pgh_reports_top," + file_name[i] + "&"
+            #TODO: create a more stable smell report layer
+            l = "l=bdrk_detailed,smell_my_city_pgh_reports_top2," + file_name[i] + "&"
         else:
             l = "l=bdrk_detailed," + file_name[i] + "&"
         share_url_ls.append(et_root_url + l + bt + et + et_part)
@@ -235,7 +237,7 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         [[250, 255, 99],[99, 255, 206],[206, 92, 247],[255, 119, 0]]
     ]
     cmaps = [source["color"] for source in sources]
-    filter_out_ratios = [source["filter_out"] for source in sources]
+    filter_out_ratios = [source["filter_out"] for source in sources] if "filter_out" in sources[0] else fliter_ratio
     print("Creating %s" % o_file)
     create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_out_ratios=filter_out_ratios)
     print("Created %s" % o_file)
@@ -390,10 +392,10 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
         return 1
 
     # Unzip each partition
-    start_dt_str = re.findall(r"\d{8}", in_dir_p)[0]
-    start_dt = datetime.datetime.strptime(start_dt_str, "%Y%m%d")
-    start_dt = pytz.timezone("US/Eastern").localize(start_dt)
-    start_dt = start_dt - pd.Timedelta(offset_hours, unit="h")
+    start_dt_str = re.findall(r"\d{12}", in_dir_p)[0]
+    start_dt = datetime.datetime.strptime(start_dt_str, "%Y%m%d%H%M")
+    start_dt = pytz.timezone("UTC").localize(start_dt)
+    start_dt = start_dt.astimezone(pytz.timezone("US/Eastern"))
     
     
     time_span = pd.Timedelta(24 / num_partitions, unit="h")

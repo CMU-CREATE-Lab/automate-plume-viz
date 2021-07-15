@@ -52,7 +52,7 @@ def genetate_earthtime_data(date_list, bin_url, url_partition, img_size, redo, p
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
-def run_hysplit(sources, bin_root, start_d, file_name, bin_url=None, num_workers=4):
+def run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=None, num_workers=4):
     print("Run Hysplit model...")
 
     # Prepare the list of dates for running the simulation
@@ -67,13 +67,14 @@ def run_hysplit(sources, bin_root, start_d, file_name, bin_url=None, num_workers
     else:
         bin_url_all = bin_url + file_name.values + ".bin"
 
-    # Set parameters (see the simulate function in automate_plume_viz.py to get more details)
+    # Set default parameters (see the simulate function in automate_plume_viz.py to get more details)
     emit_time_hrs = 1
-    duration = 24
+    duration = (end_d[0] - start_d[0]).days * 24  + (end_d[0] - start_d[0]).seconds / 3600
     filter_ratio = 0.8
 
     # Run the simulation for each date in parallel (be aware of the memory usage)
     arg_list = []
+    print("Running hysplit simulation with duration: %s hours" % duration)
     for i in range(len(bin_file_all)):
         arg_list.append((start_time_eastern_all[i], bin_file_all[i], sources,
             emit_time_hrs, duration, filter_ratio, bin_url_all[i]))
@@ -83,16 +84,17 @@ def run_hysplit(sources, bin_root, start_d, file_name, bin_url=None, num_workers
     pool.join()
 
 
-def download_video_frames(bin_url, end_d, df_img_url, prefix="plume_"):
+def download_video_frames(bin_url, df_share_url, df_img_url, prefix="plume_"):
     print("Download video frames from the thumbnail server...")
 
     # Make sure that the dates have the hysplit simulation results
     date_has_hysplit = []
-    for ed in end_d.strftime("%Y%m%d"):
-        fname = prefix + ed + ".bin"
+    for idx, row in df_share_url.iterrows():
+        fname = prefix + row["date"] + ".bin"
+        print(fname)
         if is_url_valid(bin_url + fname):
-            date_has_hysplit.append(ed)
-            
+            date_has_hysplit.append(row["date"])
+
     get_frames(df_img_url[df_img_url["date"].isin(date_has_hysplit)], dir_p="data/rgb/")
 
 
@@ -193,38 +195,38 @@ def main(argv):
 
     # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
-    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/" # Yen-Chia's example (DO NOT USE)
-    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/" # Yen-Chia's example (DO NOT USE)
-    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/" # Yen-Chia's example (DO NOT USE)
-    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/" # Yen-Chia's example (DO NOT USE)
-    prefix, lat, lng, zoom = "plume_noburst_", "40.42532", "-79.91643", "9.233"
+    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/stilt-mode/" # Yen-Chia's example (DO NOT USE)
+    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/stilt-mode/" # Yen-Chia's example (DO NOT USE)
+    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/stilt-mode/" # Yen-Chia's example (DO NOT USE)
+    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/stilt-mode/" # Yen-Chia's example (DO NOT USE)
+    prefix, lat, lng, zoom = "plume_stilt_", "40.42532", "-79.91643", "9.233"
     sources = [
         {
             "dispersion_source":DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
             "color": [250, 255, 99],
-            "filter_out": .859
+            "filter_out": .76
         },
         {
             "dispersion_source":DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
             "color": [99, 255, 206],
-            "filter_out": .9147
+            "filter_out": .86
         },
         {
             "dispersion_source":DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
             "color": [206, 92, 247],
-            "filter_out": .7
+            "filter_out": .50
         },
         {
             "dispersion_source":DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50),
             "color": [255, 119, 0],
-            "filter_out": .9351
+            "filter_out": .89
         }
         ]
-    date_list, redo = get_time_range_list(["2021-04-06"], duration=26, offset_hours=7), 0
+    date_list, redo = get_time_range_list(["2021-04-05"], duration=26, offset_hours=5), 6
     #date_list, redo = get_start:_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
     #date_list, redo = get_start_end_time_list("2021-04-08", "2021-04-09", offset_hours=3), 5
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
-    #date_list, redo = get_start_end_time_list("2021-04-04", "2021-04-05", offset_hours=3), 3
+    #date_list, redo = get_start_end_time_list("2021-04-05", "2021-04-06", offset_hours=3), 3
     #today = date.today().strftime("%Y-%m-%d")
 
 
@@ -255,13 +257,13 @@ def main(argv):
     # ...make sure you set the input argument "bin_url" of the run_hysplit function to None
     # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
     if argv[1] == "run_hysplit":
-        run_hysplit(sources, bin_root, start_d, file_name, bin_url=bin_url)
+        run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=bin_url)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
     # IMPORTANT: if you forgot to copy the bin files to the correct folder, this step will not do anything
     if argv[1] == "download_video_frames":
-        download_video_frames(bin_url, end_d, df_img_url, prefix)
+        download_video_frames(bin_url, df_share_url, df_img_url, prefix)
 
     # Then, create all videos
     # IMPORTANT: after creating the video files, you need to move them to the correct folder for public access
