@@ -195,34 +195,34 @@ def main(argv):
 
     # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
-    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/stilt-mode/" # Yen-Chia's example (DO NOT USE)
-    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/stilt-mode/" # Yen-Chia's example (DO NOT USE)
-    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/bin/stilt-mode/" # Yen-Chia's example (DO NOT USE)
-    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/experiments/video/stilt-mode/" # Yen-Chia's example (DO NOT USE)
-    prefix, lat, lng, zoom = "plume_stilt_", "40.42532", "-79.91643", "9.233"
+    bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    video_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
+    bin_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
+    video_url = "https://aircocalc-www.createlab.org/pardumps/plumeviz/video/" # Yen-Chia's example (DO NOT USE)
+    prefix, lat, lng, zoom = "plume_", "40.42532", "-79.91643", "9.233"
     sources = [
         {
             "dispersion_source":DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
             "color": [250, 255, 99],
-            "filter_out": .76
+            "filter_out": .8
         },
         {
             "dispersion_source":DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
             "color": [99, 255, 206],
-            "filter_out": .86
+            "filter_out": .8
         },
         {
             "dispersion_source":DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
             "color": [206, 92, 247],
-            "filter_out": .50
+            "filter_out": .8
         },
         {
             "dispersion_source":DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50),
             "color": [255, 119, 0],
-            "filter_out": .89
+            "filter_out": .8
         }
         ]
-    date_list, redo = get_time_range_list(["2021-04-05"], duration=26, offset_hours=5), 6
+    date_list, redo = get_time_range_list(["2021-07-14"], duration=26, offset_hours=2), 9
     #date_list, redo = get_start:_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
     #date_list, redo = get_start_end_time_list("2021-04-08", "2021-04-09", offset_hours=3), 5
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2

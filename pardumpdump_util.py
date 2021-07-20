@@ -40,8 +40,6 @@ def findInFolder(folder, pattern):
 def parse_pardump(fname, rgb, filter_ratio=0.8, with_size=False):
     # Process lines in the file
     print("Process lines...")
-    print(f"Loading {fname}, removing {filter_ratio*100:.1f}% of points")
-
     points = {}
     with open(fname, "r") as f:
         for line in f:
@@ -68,33 +66,32 @@ def parse_pardump(fname, rgb, filter_ratio=0.8, with_size=False):
                     sigh = sigh_to_pixel(float(l[3]), l[0])
             elif len(L) == 5:
                 # This is where we can find the points
-                if minute % 5 == 0:
+                if random.random() > filter_ratio:
                     idx = L[4]
                     if idx not in points:
                         points[idx] = []
-                    if with_size:
-                        points[idx].append([x, y, z, epoch, sigh])
-                    else:
-                        points[idx].append([x, y, z, epoch])
-
+                    if minute % 5 == 0:
+                        if with_size:
+                            points[idx].append([x, y, z, epoch, sigh])
+                        else:
+                            points[idx].append([x, y, z, epoch])
     # Process points
     print("Process %d points obtained from the file" % len(points))
     c = pack_color(rgb)
     data = []
     for idx in points:
-        if random.random() > filter_ratio:
-            p = points[idx]
-            if len(p) > 1:
-                for i in range(0, len(p) - 1):
-                    p0 = p[i]
-                    p1 = p[i+1]
-                    # Each shader record in float32 is:
-                    # x0, y0, z0, epoch0, x1, y1, z1, epoch1, packedColor
-                    # x and y are in web mercator space 0,0 is NW 255,255 is SE
-                    if with_size:
-                        data += [p0[0], p0[1], p0[2], p0[3], p1[0], p1[1], p1[2], p1[3], c, p1[4]]
-                    else:
-                        data += [p0[0], p0[1], p0[2], p0[3], p1[0], p1[1], p1[2], p1[3], c]
+        p = points[idx]
+        if len(p) > 1:
+            for i in range(0, len(p) - 1):
+                p0 = p[i]
+                p1 = p[i+1]
+                # Each shader record in float32 is:
+                # x0, y0, z0, epoch0, x1, y1, z1, epoch1, packedColor
+                # x and y are in web mercator space 0,0 is NW 255,255 is SE
+                if with_size:
+                    data += [p0[0], p0[1], p0[2], p0[3], p1[0], p1[1], p1[2], p1[3], c, p1[4]]
+                else:
+                    data += [p0[0], p0[1], p0[2], p0[3], p1[0], p1[1], p1[2], p1[3], c]
     return data
 
 
