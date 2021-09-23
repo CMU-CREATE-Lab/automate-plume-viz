@@ -136,7 +136,7 @@ class CachedDispersionRun:
         hysplit_root -- the root directory of the hysplit software
     """
     def __init__(self, source, runStartLocal, emitTimeHrs, runTimeHrs, hysplitModelSettings,
-                 fileName='cdump', hysplit_root='/projects/hysplit/', verbose=False,
+                 fileName='cdump', hysplit_root='/projects/hysplit.v5.1.0/', verbose=False,
                  dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
                  hrrrDirPath='/projects/earthtime/air-data/hrrr'):
         try:
@@ -434,6 +434,7 @@ class CachedDispersionRun:
         else:
             # dump every 1 minute until entire run is done
             ndump = -self.runTimeHrs
+
         templ = Template(
             """&SETUP
 {#          #}NUMPAR = 2500,
@@ -441,6 +442,7 @@ class CachedDispersionRun:
 {#          #}INITD ={{run.initdModelType.value}},
 {#          #}CONAGE = 1,
 {#          #}KSPL = 1,
+{#          #}ICHEM = 8,
 {#          #}ndump = {{ndump}},
 {#          #}ncycl = 1,
 {#          #}delt = 1,
@@ -572,10 +574,9 @@ def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSet
     run.assertComplete()
     return run
 
-
 def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRunTimeHrs,
         hysplitModelSettings,backwardsHrs=0,resolutionHrs=1,
-        dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
+        dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionStiltCache',
         hrrrDirPath='/projects/earthtime/air-data/hrrr'):
     # TODO: Change to only return
     # Only used for visualization (currently)

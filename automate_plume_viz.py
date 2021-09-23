@@ -208,20 +208,26 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     print("len(path_list)=%d" % len(path_list))
 
     # Save pdump text files (the generated files are cached)
-    pdump_txt_list = []
+    # pdump_txt_list = []
+    # for folder in path_list:
+    #     if not findInFolder(folder,"PARDUMP*.txt"):
+    #         pdump = findInFolder(folder, "PARDUMP.*")
+    #         # TODO: unzip PARDUMP gzip files
+    #         cmd = hysplit_root + "exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
+    #         if pdump.find('.txt') == -1:
+    #             pdump_txt_list.append(pdump+".txt")
+    #         print("par2asc for %s" % pdump)
+    #         subprocess_check(cmd)
+    #     else:
+    #         pdump_txt = findInFolder(folder,'PARDUMP*.txt')
+    #         pdump_txt_list.append(pdump_txt)
+    # print("len(pdump_txt_list)=%d" % len(pdump_txt_list))
+
+    traj_file_list = []
     for folder in path_list:
-        if not findInFolder(folder,"PARDUMP*.txt"):
-            pdump = findInFolder(folder, "PARDUMP.*")
-            # TODO: unzip PARDUMP gzip files
-            cmd = hysplit_root + "exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
-            if pdump.find('.txt') == -1:
-                pdump_txt_list.append(pdump+".txt")
-            print("par2asc for %s" % pdump)
-            subprocess_check(cmd)
-        else:
-            pdump_txt = findInFolder(folder,'PARDUMP*.txt')
-            pdump_txt_list.append(pdump_txt)
-    print("len(pdump_txt_list)=%d" % len(pdump_txt_list))
+        traj = findInFolder(folder,"PARTICLE.DAT")
+        traj_file_list.append(traj)
+    print("len(traj_file_list)=%d" % len(traj_file_list))
 
     # Add color
     cmap = "viridis"
@@ -237,19 +243,19 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         [[250, 255, 99],[99, 255, 206],[206, 92, 247],[255, 119, 0]]
     ]
     cmaps = [source["color"] for source in sources]
-    filter_out_ratios = [source["filter_out"] for source in sources] if "filter_out" in sources[0] else fliter_ratio
+    filter_out_ratios = [source["filter_out"] for source in sources] if "filter_out" in sources[0] else filter_ratio
     print("Creating %s" % o_file)
-    create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_out_ratios=filter_out_ratios)
+    create_multisource_bin(traj_file_list, o_file, len(sources), cmaps, filter_out_ratios=filter_out_ratios)
     print("Created %s" % o_file)
     os.chmod(o_file, 0o777)
 
     # Cleanup files
-    print("Cleaning files...")
-    for folder in path_list:
-        pdump_txt = findInFolder(folder,'PARDUMP*.txt')
-        print("Remove file %s" % pdump_txt)
-        os.remove(pdump_txt)
-        # TODO: gzip PARDUMP.* files
+    # print("Cleaning files...")
+    # for folder in path_list:
+    #     pdump_txt = findInFolder(folder,'PARDUMP*.txt')
+    #     print("Remove file %s" % pdump_txt)
+    #     os.remove(pdump_txt)
+    #     # TODO: gzip PARDUMP.* files
 
 
 def is_url_valid(url):

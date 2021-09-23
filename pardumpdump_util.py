@@ -4,11 +4,17 @@ This code was taken and edited from the following path on the hal21 server:
     /projects/earthtime/files/air-src/linRegModel/pardump_example/pardumpdump-randy-amy-util.ipynb
 """
 
+#%%
 
-import glob, os, array, datetime, math, random
+import glob, os, array, datetime, dateutil.parser, math, random, re, json
 import numpy as np
+import pandas as pd
+
 from utils import subprocess_check, SimpleProcessPoolExecutor
 
+#adjust epoch to January 1, 2020 and scale from seconds to minutes for greater precision
+EPOCH_OFFSET = 1577836800
+EPOCH_SCALE = 60
 
 def gunzipFiles(fnames, zipfnames):
     for fname in zipfnames:
@@ -108,6 +114,12 @@ def lonlat_to_pixel_xy(lonlat):
     y = 128.0 - math.log(math.tan((lat + 90.0) * math.pi / 360.0)) * 128.0 / math.pi
     return [x, y]
 
+def lonlat_to_pixel_xy_series(lonlat):
+    (lon, lat) = lonlat
+    x = (lon + 180.0) * 256.0 / 360.0 #converts [-180,180] to [0,256]
+    y = 128.0 - np.log(np.tan((lat + 90.0) * math.pi / 360.0)) * 128.0 / math.pi
+    return [x, y]
+
 
 def sigh_to_pixel(sigh,lat):
     return sigh / (157000.0 * abs(math.cos(lat)))
@@ -136,13 +148,13 @@ def create_bin(fnames, o_file, colormap):
     points = []
 
 
-def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duration, filter_out_ratios=0.8):
+def create_multisource_bin(fnames, o_file, numSources, cmaps, filter_out_ratios=0.8):
     """
     Coloring based on source
     filter_out_ratios=0.8 means that 80% of the points will be dropped. if specified as a dict, filter ratios are applied per source.
     with_size=True means visualizing puffs instead of particles
     """
-    runTimeHrs = len(fnames) / numSources
+    runTimeHrs = int(len(fnames) / numSources)
 
     filter_dict = False
     if type(filter_out_ratios) == list:
@@ -150,22 +162,105 @@ def create_multisource_bin(fnames, o_file, numSources, with_size, cmaps, duratio
         filter_dict = True
 
     print("Only use %s of all the points to reduce file size" % filter_out_ratios)
-    all_points = []
-    
     maxWorkers = 10
     pool = SimpleProcessPoolExecutor(maxWorkers)
-    for i, fname in enumerate(fnames):
-        src = i / runTimeHrs
-        rgb = cmaps[int(src)]
-        filter_out = filter_out_ratios[int(src)] if filter_dict else filter_out_ratios
-        pool.submit(parse_pardump,fname,rgb,filter_ratio=filter_out,with_size=with_size)
-        #
+    for i in range(numSources):
+        start_file = i * runTimeHrs
+        single_source = fnames[start_file:start_file+runTimeHrs]
+        rgb = cmaps[i]
+        filter_out = filter_out_ratios[i] if filter_dict else filter_out_ratios
+
+        pool.submit(particle_dat_to_bin,single_source,rgb,filter_out)
+    
     all_points = pool.shutdown()
-    #
     points = np.concatenate(all_points)
-    attrs = 10 if with_size else 9
-    points = points.reshape((-1, attrs))
-    np.random.shuffle(points)
-    points = points.reshape((-1, 1))
+
+    #construct subset dir
+
+    #sort by first timestamp
+    points = points[points[:,3].argsort()]
+    tstamps = points[:,3]
+
+    subsets = []
+    first = int(min(tstamps))
+    last = int(max(tstamps))
+    last_index = 0
+
+    for t in range(first + 60,last,60):
+        subset_record = {}
+        next_index = np.where(tstamps == t)[0][0]
+        subset_record["epoch"] = int(datetime.datetime.fromtimestamp(tstamps[next_index] * EPOCH_SCALE + EPOCH_OFFSET).timestamp())
+        subset_record["first"] = int(last_index)
+        subset_record["count"] = int(next_index - last_index)
+        
+        subsets.append(subset_record)
+        last_index = next_index
+    
+    with open(o_file[:-4] + ".json", 'w') as f:
+        json.dump(subsets, f)
+    
     print("Writing array to file %s" % o_file)
-    array.array('f', points).tofile(open(o_file, 'wb'))
+    points.tofile(o_file)
+
+
+def read_particle_dat(particle_dat_filename, filter_out = .5, subsample=10 ):
+    pardump_df = pd.read_csv(particle_dat_filename, delim_whitespace=True)
+    print(f'Read {len(pardump_df)} records')
+
+    pardump_df.sort_values(['index', 'time'], inplace=True)
+    min_times = pardump_df.groupby(by='index')['time'].min()
+    pardump_df = pd.merge(left=pardump_df,right=min_times,on='index',suffixes=['','_min'])
+    pardump_df = pardump_df[pardump_df['time'].mod(subsample) == pardump_df['time_min'].mod(subsample)]
+
+    print(f'{len(pardump_df)} records after subsampling time by {subsample}')
+
+    assert(filter_out < 1)
+    keep_ratio = 1 - filter_out
+    num_particles = pardump_df['index'].max()
+    keep_indxs = random.sample(range(1,num_particles),int(num_particles * keep_ratio))
+    pardump_df = pardump_df[pardump_df['index'].isin(keep_indxs)]
+    print(f'{len(pardump_df)} records after dropping {filter_out * 100}% of particle indices')
+
+    pardump_df['time'] = pardump_df['time'] * 60
+    start_datetime = dateutil.parser.parse(re.search(
+        r'\d{8}_\d{6}-\d{4}',particle_dat_filename).group(0).replace('_',' ')).timestamp()
+    pardump_df['time'] = pardump_df['time'] + start_datetime
+    print(start_datetime)
+    pardump_df.index = range(0, len(pardump_df))
+    return pardump_df
+
+def read_and_concat_particle_dat_files(filenames,filter_out):
+    dfs = []
+    index_offset = 0
+
+    for filename in filenames:
+        df: pd.DataFrame = read_particle_dat(filename,filter_out)
+        df['index'] += index_offset
+        print(f'Read {len(df)} records, indices {df["index"].min()} to {df["index"].max()}, from {filename}')
+        index_offset = df['index'].max()
+        dfs.append(df)
+
+    df = pd.concat(dfs)
+    print(f'Concatenated to {len(df)} records, indices {df["index"].min()} to {df["index"].max()}')
+    return df
+
+def df_to_bin(pardump_df, rgb):
+    index = pardump_df['index'].to_numpy()
+    lat = pardump_df['lat'].to_numpy()
+    lon = pardump_df['lon'].to_numpy()
+    alt = pardump_df['agl'].to_numpy()
+    epochtime = ((pardump_df['time'] - EPOCH_OFFSET) / EPOCH_SCALE ).to_numpy()
+    packed_color = pack_color(rgb)
+
+    x, y = lonlat_to_pixel_xy_series((lon, lat))
+
+    newdf = pd.DataFrame({'particle_id0':index[:-1],'x0': x[:-1], 'y0': y[:-1], 'z0': alt[:-1], 't0': epochtime[:-1],
+                         'particle_id1':index[1:],'x1': x[1:], 'y1': y[1:], 'z1': alt[1:], 't1': epochtime[1:],
+                         'color':packed_color})
+    records = newdf[newdf.particle_id0 == newdf.particle_id1]
+    return records.drop(['particle_id0','particle_id1'],axis=1).to_numpy(np.float32)
+
+def particle_dat_to_bin(filenames,rgb,filter_out):
+    df = read_and_concat_particle_dat_files(filenames,filter_out)
+    df.reset_index(inplace=True)
+    return df_to_bin(df,rgb)
