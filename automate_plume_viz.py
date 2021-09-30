@@ -2,7 +2,6 @@
 Automate the plume visualization using hysplit model simulation
 """
 
-
 import os, re, datetime, json, pytz, subprocess, time, shutil, requests, traceback
 import numpy as np
 from bs4 import BeautifulSoup
@@ -378,7 +377,7 @@ def check_and_create_dir(path):
             traceback.print_exc()
 
 
-def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
+def unzip_and_rename(in_dir_p, out_dir_p):
     """
     Unzip the video frames and rename them to the correct datetime
 
@@ -400,11 +399,18 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
     # Unzip each partition
     start_dt_str = re.findall(r"\d{12}", in_dir_p)[0]
     start_dt = datetime.datetime.strptime(start_dt_str, "%Y%m%d%H%M")
+
+    end_dt_str = re.findall(r"\d{12}", in_dir_p)[1]
+    end_dt = datetime.datetime.strptime(end_dt_str, "%Y%m%d%H%M")
+
+    duration_td = end_dt - start_dt
+    days, seconds = duration_td.days, duration_td.seconds
+    hours = days * 24 + seconds // 3600
+    
     start_dt = pytz.timezone("UTC").localize(start_dt)
     start_dt = start_dt.astimezone(pytz.timezone("US/Eastern"))
     
-    
-    time_span = pd.Timedelta(24 / num_partitions, unit="h")
+    time_span = pd.Timedelta(hours / num_partitions, unit="h")
     num_files_per_partition = 0
     for i in range(num_partitions):
         start_dt_partition = start_dt + time_span * i

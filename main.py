@@ -108,7 +108,7 @@ def create_all_videos(video_root):
         frame_dir_p = in_dir_p + "frames/"
         if not os.path.isdir(frame_dir_p): # skip if video frames were unzipped
             print("Process %s..." % dn)
-            status = unzip_and_rename(in_dir_p, frame_dir_p, offset_hours=3)
+            status = unzip_and_rename(in_dir_p, frame_dir_p)
             if (status == 1):
                 continue
         # Create video
