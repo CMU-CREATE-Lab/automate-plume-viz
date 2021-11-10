@@ -175,7 +175,7 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
 
 
 def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8,
-        hysplit_root="/projects/hysplit/"):
+        useForecast=False):
     """
     Run the HYSPLIT simulation
 
@@ -204,7 +204,8 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
                 parse_eastern(start_time_eastern),
                 emit_time_hrs,
                 duration,
-                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False))
+                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False),
+                useForecast=useForecast)
     print("len(path_list)=%d" % len(path_list))
 
     # Save pdump text files (the generated files are cached)
@@ -268,7 +269,7 @@ def is_url_valid(url):
         return False
 
 
-def simulate_worker(start_time_eastern, o_file, sources, emit_time_hrs, duration, filter_ratio, o_url):
+def simulate_worker(start_time_eastern, o_file, sources, emit_time_hrs, duration, filter_ratio, o_url, useForecast=False):
     """
     The parallel worker for hysplit simulation
 
@@ -289,7 +290,7 @@ def simulate_worker(start_time_eastern, o_file, sources, emit_time_hrs, duration
     # Perform HYSPLIT model simulation
     try:
         simulate(start_time_eastern, o_file, sources,
-                emit_time_hrs=emit_time_hrs, duration=duration, filter_ratio=filter_ratio)
+                emit_time_hrs=emit_time_hrs, duration=duration, filter_ratio=filter_ratio, useForecast=useForecast)
         return True
     except Exception:
         print("-"*60)
@@ -400,11 +401,18 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
     # Unzip each partition
     start_dt_str = re.findall(r"\d{12}", in_dir_p)[0]
     start_dt = datetime.datetime.strptime(start_dt_str, "%Y%m%d%H%M")
+
+    end_dt_str = re.findall(r"\d{12}", in_dir_p)[1]
+    end_dt = datetime.datetime.strptime(end_dt_str, "%Y%m%d%H%M")
+
+    duration_td = end_dt - start_dt
+    days, seconds = duration_td.days, duration_td.seconds
+    hours = days * 24 + seconds // 3600
+    
     start_dt = pytz.timezone("UTC").localize(start_dt)
     start_dt = start_dt.astimezone(pytz.timezone("US/Eastern"))
     
-    
-    time_span = pd.Timedelta(24 / num_partitions, unit="h")
+    time_span = pd.Timedelta(hours / num_partitions, unit="h")
     num_files_per_partition = 0
     for i in range(num_partitions):
         start_dt_partition = start_dt + time_span * i

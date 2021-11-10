@@ -138,7 +138,8 @@ class CachedDispersionRun:
     def __init__(self, source, runStartLocal, emitTimeHrs, runTimeHrs, hysplitModelSettings,
                  fileName='cdump', hysplit_root='/projects/hysplit.v5.1.0/', verbose=False,
                  dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionCache',
-                 hrrrDirPath='/projects/earthtime/air-data/hrrr'):
+                 hrrrDirPath='/projects/earthtime/air-data/hrrr',
+                 useForecast=False):
         try:
             self.dispersionCachePath = dispersionCachePath
             self.hrrrDirPath = hrrrDirPath
@@ -194,7 +195,13 @@ class CachedDispersionRun:
         self.hysplitLoc = hysplit_root + "exec/"
         self.runHr = int(runTimeHrs)
         self.runMin = int((runTimeHrs - int(runTimeHrs))*60)
-        self.fNames = self.fetchWeatherFiles()
+        
+        if useForecast:
+            self.log('Using forecast met files...')
+            self.fNames = self.fetchForecastFiles()
+        else:
+            self.log('Using reanalysis met files...')
+            self.fNames = self.fetchWeatherFiles()
 
     def assertComplete(self):
         """Assert this run has all files associated with successful completion, e.g. cdump"""
@@ -210,9 +217,6 @@ class CachedDispersionRun:
             self.assertComplete()
         else:
             self.vlog('Hysplit run at location %s already complete.' % self.path())
-            # Force uncompressing of PARDUMP
-            # Randy commented Feb 22 ... do we still need this here or can we move to where we actually need to read PARDUMP?
-            # self.getUncompressedPardump()
             self.assertComplete()
         return(self.path())
 
@@ -417,6 +421,26 @@ class CachedDispersionRun:
             fNames.append(fullPath)
         return fNames
 
+    def fetchForecastFiles(self):
+        #no download for now
+        hrrrDir = os.path.abspath(self.hrrrDirPath)
+        fNames = []
+        # for dt in self.computeTimes(FORECAST_FILE_LENGTH_HRS):
+        #     #name = dt.strftime('hysplit.t20z.hrrrf')
+        #     name = dt.strftime('hysplit.t%Hz.hrrrf')
+        #     #dayDir = (self.runStartUtc - datetime.timedelta(hours=(24 - self.runTimeHrs))).strftime('%Y-%m-%d')
+        #     #dayDir = self.runStartUtc.strftime('%Y-%m-%d')
+        #     #dayDir = '2021-04-06'
+        #     dayDir = dt.strftime('%Y-%m-%d')
+        #     fullPath = hrrrDir + '/' + dayDir + '/'+ name
+        #     if not os.path.exists(fullPath):
+        #         self.log('!!!!!!!!!!!!!!!!Could not find HRRR file for time: ' + name)
+        #     fNames.append(fullPath)
+        #     print("Calculated download link: https://storage.googleapis.com/high-resolution-rapid-refresh/noaa_arl_formatted/forecast/%s/%s" % (dayDir, name) )
+        fNames = [hrrrDir + '/2021-08-06/hysplit.t22z.hrrrf', hrrrDir + '/2021-08-07/hysplit.t10z.hrrrf']
+        self.log("WARNING: Using hard-coded fNames: %s" % fNames)
+        return fNames
+
     def computeTimes(self):
         dtimes = []
         t = self.runStartUtc
@@ -577,11 +601,16 @@ def getDispersionRun(source,runStartLocal,emitTimeHrs,runTimeHrs,hysplitModelSet
 def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRunTimeHrs,
         hysplitModelSettings,backwardsHrs=0,resolutionHrs=1,
         dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionStiltCache',
-        hrrrDirPath='/projects/earthtime/air-data/hrrr'):
+        hrrrDirPath='/projects/earthtime/air-data/hrrr',useForecast=False):
     # TODO: Change to only return
     # Only used for visualization (currently)
     # Use threading to produce collection of DispersionRuns over several hours for the same source
     # TODO: Check if resolutionHrs param is redundant with emitTimeHrs (check old linRegLib method). Not urgent as long as both are always 1
+
+    if useForecast:
+        hrrrDirPath = '/projects/earthtime/air-data/hrrr-forecast'
+        dispersionCachePath='/projects/earthtime/air-src/linRegModel/dispersionStiltForecastCache'
+
     hysplitStartLocal = runStartLocal - datetime.timedelta(hours=backwardsHrs)
     hysplitRunTimeHrs = totalRunTimeHrs + backwardsHrs
 
@@ -598,7 +627,8 @@ def getMultiHourDispersionRunsParallel(source,runStartLocal,emitTimeHrs,totalRun
             runTimeHrs=min(hysplitRunTimeHrs-(i*resolutionHrs),24),
             hysplitModelSettings=hysplitModelSettings,
             dispersionCachePath=dispersionCachePath,
-            hrrrDirPath=hrrrDirPath
+            hrrrDirPath=hrrrDirPath,
+            useForecast=useForecast
             )
         pool.submit(run.findOrRun)
     pathList = pool.shutdown()

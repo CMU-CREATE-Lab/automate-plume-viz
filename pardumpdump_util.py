@@ -4,7 +4,6 @@ This code was taken and edited from the following path on the hal21 server:
     /projects/earthtime/files/air-src/linRegModel/pardump_example/pardumpdump-randy-amy-util.ipynb
 """
 
-#%%
 
 import glob, os, array, datetime, dateutil.parser, math, random, re, json
 import numpy as np
