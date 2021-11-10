@@ -37,7 +37,7 @@ def exec_ipynb(filename_or_url):
     exec(code, globals())
 
 
-def get_start_end_time_list(start_date_eastern, end_date_eastern, offset_hours=3):
+def get_start_end_time_list(start_date_eastern, end_date_eastern, duration=24, offset_hours=3):
     """
     Given starting and ending date string, get a list of starting and ending datetime objects
 
@@ -52,7 +52,8 @@ def get_start_end_time_list(start_date_eastern, end_date_eastern, offset_hours=3
     """
     offset_d = pd.Timedelta(offset_hours, unit="h")
     start_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="left", tz="US/Eastern") - offset_d
-    end_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="right", tz="US/Eastern") - offset_d
+    end_d = start_d + pd.Timedelta(duration, unit="h")
+    #end_d = pd.date_range(start=start_date_eastern, end=end_date_eastern, closed="right", tz="US/Eastern") - offset_d
     return (start_d, end_d)
 
 
@@ -118,7 +119,7 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
     df_layer["Start date"] = start_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["End date"] = end_d_utc.strftime("%Y%m%d%H%M%S")
     df_layer["Share link identifier"] = file_name
-    df_layer["Name"] = name_prefix + end_d.strftime("%Y-%m-%d")
+    df_layer["Name"] = name_prefix + start_d_utc.strftime("%Y-%m-%d")
     df_layer["URL"] = file_path + file_name + ".bin"
     df_layer["Category"] = category
     df_layer["Credits"] = credits
