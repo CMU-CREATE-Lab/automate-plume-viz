@@ -358,6 +358,9 @@ def urlretrieve_worker(url, file_p):
     try:
         print("\t{Request} %s\n" % url)
         urllib.request.urlretrieve(url, file_p)
+        if os.path.getsize(file_p) < 200000:
+             raise Exception('Thumbnail server returned too few frames for %s. Did you \
+add a layer definition to the Earthtime spreadsheet?' % file_p)
         os.chmod(file_p, 0o777)
         print("\t{Done} %s\n" % url)
     except Exception:
