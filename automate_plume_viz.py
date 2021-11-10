@@ -2,7 +2,6 @@
 Automate the plume visualization using hysplit model simulation
 """
 
-
 import os, re, datetime, json, pytz, subprocess, time, shutil, requests, traceback
 import numpy as np
 from bs4 import BeautifulSoup
@@ -379,7 +378,7 @@ def check_and_create_dir(path):
             traceback.print_exc()
 
 
-def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
+def unzip_and_rename(in_dir_p, out_dir_p):
     """
     Unzip the video frames and rename them to the correct datetime
 
