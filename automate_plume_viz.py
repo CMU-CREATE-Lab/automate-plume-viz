@@ -2,7 +2,6 @@
 Automate the plume visualization using hysplit model simulation
 """
 
-
 import os, re, datetime, json, pytz, subprocess, time, shutil, requests, traceback
 import numpy as np
 from bs4 import BeautifulSoup
@@ -176,7 +175,7 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
 
 
 def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, filter_ratio=0.8,
-        hysplit_root="/projects/hysplit/"):
+        useForecast=False):
     """
     Run the HYSPLIT simulation
 
@@ -205,24 +204,31 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
                 parse_eastern(start_time_eastern),
                 emit_time_hrs,
                 duration,
-                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False))
+                HysplitModelSettings(initdModelType=InitdModelType.ParticleHV, hourlyPardump=False),
+                useForecast=useForecast)
     print("len(path_list)=%d" % len(path_list))
 
     # Save pdump text files (the generated files are cached)
-    pdump_txt_list = []
+    # pdump_txt_list = []
+    # for folder in path_list:
+    #     if not findInFolder(folder,"PARDUMP*.txt"):
+    #         pdump = findInFolder(folder, "PARDUMP.*")
+    #         # TODO: unzip PARDUMP gzip files
+    #         cmd = hysplit_root + "exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
+    #         if pdump.find('.txt') == -1:
+    #             pdump_txt_list.append(pdump+".txt")
+    #         print("par2asc for %s" % pdump)
+    #         subprocess_check(cmd)
+    #     else:
+    #         pdump_txt = findInFolder(folder,'PARDUMP*.txt')
+    #         pdump_txt_list.append(pdump_txt)
+    # print("len(pdump_txt_list)=%d" % len(pdump_txt_list))
+
+    traj_file_list = []
     for folder in path_list:
-        if not findInFolder(folder,"PARDUMP*.txt"):
-            pdump = findInFolder(folder, "PARDUMP.*")
-            # TODO: unzip PARDUMP gzip files
-            cmd = hysplit_root + "exec/par2asc -i%s -o%s" % (pdump, pdump+".txt")
-            if pdump.find('.txt') == -1:
-                pdump_txt_list.append(pdump+".txt")
-            print("par2asc for %s" % pdump)
-            subprocess_check(cmd)
-        else:
-            pdump_txt = findInFolder(folder,'PARDUMP*.txt')
-            pdump_txt_list.append(pdump_txt)
-    print("len(pdump_txt_list)=%d" % len(pdump_txt_list))
+        traj = findInFolder(folder,"PARTICLE.DAT")
+        traj_file_list.append(traj)
+    print("len(traj_file_list)=%d" % len(traj_file_list))
 
     # Add color
     cmap = "viridis"
@@ -238,19 +244,19 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
         [[250, 255, 99],[99, 255, 206],[206, 92, 247],[255, 119, 0]]
     ]
     cmaps = [source["color"] for source in sources]
-    filter_out_ratios = [source["filter_out"] for source in sources] if "filter_out" in sources[0] else fliter_ratio
+    filter_out_ratios = [source["filter_out"] for source in sources] if "filter_out" in sources[0] else filter_ratio
     print("Creating %s" % o_file)
-    create_multisource_bin(pdump_txt_list, o_file, len(sources), False, cmaps, duration, filter_out_ratios=filter_out_ratios)
+    create_multisource_bin(traj_file_list, o_file, len(sources), cmaps, filter_out_ratios=filter_out_ratios)
     print("Created %s" % o_file)
     os.chmod(o_file, 0o777)
 
     # Cleanup files
-    print("Cleaning files...")
-    for folder in path_list:
-        pdump_txt = findInFolder(folder,'PARDUMP*.txt')
-        print("Remove file %s" % pdump_txt)
-        os.remove(pdump_txt)
-        # TODO: gzip PARDUMP.* files
+    # print("Cleaning files...")
+    # for folder in path_list:
+    #     pdump_txt = findInFolder(folder,'PARDUMP*.txt')
+    #     print("Remove file %s" % pdump_txt)
+    #     os.remove(pdump_txt)
+    #     # TODO: gzip PARDUMP.* files
 
 
 def is_url_valid(url):
@@ -263,7 +269,7 @@ def is_url_valid(url):
         return False
 
 
-def simulate_worker(start_time_eastern, o_file, sources, emit_time_hrs, duration, filter_ratio, o_url):
+def simulate_worker(start_time_eastern, o_file, sources, emit_time_hrs, duration, filter_ratio, o_url, useForecast=False):
     """
     The parallel worker for hysplit simulation
 
@@ -284,7 +290,7 @@ def simulate_worker(start_time_eastern, o_file, sources, emit_time_hrs, duration
     # Perform HYSPLIT model simulation
     try:
         simulate(start_time_eastern, o_file, sources,
-                emit_time_hrs=emit_time_hrs, duration=duration, filter_ratio=filter_ratio)
+                emit_time_hrs=emit_time_hrs, duration=duration, filter_ratio=filter_ratio, useForecast=useForecast)
         return True
     except Exception:
         print("-"*60)
@@ -376,7 +382,7 @@ def check_and_create_dir(path):
             traceback.print_exc()
 
 
-def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
+def unzip_and_rename(in_dir_p, out_dir_p):
     """
     Unzip the video frames and rename them to the correct datetime
 
@@ -398,11 +404,18 @@ def unzip_and_rename(in_dir_p, out_dir_p, offset_hours=3):
     # Unzip each partition
     start_dt_str = re.findall(r"\d{12}", in_dir_p)[0]
     start_dt = datetime.datetime.strptime(start_dt_str, "%Y%m%d%H%M")
+
+    end_dt_str = re.findall(r"\d{12}", in_dir_p)[1]
+    end_dt = datetime.datetime.strptime(end_dt_str, "%Y%m%d%H%M")
+
+    duration_td = end_dt - start_dt
+    days, seconds = duration_td.days, duration_td.seconds
+    hours = days * 24 + seconds // 3600
+    
     start_dt = pytz.timezone("UTC").localize(start_dt)
     start_dt = start_dt.astimezone(pytz.timezone("US/Eastern"))
     
-    
-    time_span = pd.Timedelta(24 / num_partitions, unit="h")
+    time_span = pd.Timedelta(hours / num_partitions, unit="h")
     num_files_per_partition = 0
     for i in range(num_partitions):
         start_dt_partition = start_dt + time_span * i

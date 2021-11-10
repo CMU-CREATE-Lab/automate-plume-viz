@@ -52,8 +52,9 @@ def genetate_earthtime_data(date_list, bin_url, url_partition, img_size, redo, p
     return (start_d, end_d, file_name, df_share_url, df_img_url)
 
 
-def run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=None, num_workers=4):
+def run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=None, num_workers=4, use_forecast=False):
     print("Run Hysplit model...")
+    print("Using num workers: %s" % num_workers)
 
     # Prepare the list of dates for running the simulation
     start_time_eastern_all = start_d.strftime("%Y-%m-%d %H:%M").values
@@ -77,7 +78,7 @@ def run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=None, num_
     print("Running hysplit simulation with duration: %s hours" % duration)
     for i in range(len(bin_file_all)):
         arg_list.append((start_time_eastern_all[i], bin_file_all[i], sources,
-            emit_time_hrs, duration, filter_ratio, bin_url_all[i]))
+            emit_time_hrs, duration, filter_ratio, bin_url_all[i], use_forecast))
     pool = Pool(num_workers)
     pool.starmap(simulate_worker, arg_list)
     pool.close()
@@ -108,7 +109,7 @@ def create_all_videos(video_root):
         frame_dir_p = in_dir_p + "frames/"
         if not os.path.isdir(frame_dir_p): # skip if video frames were unzipped
             print("Process %s..." % dn)
-            status = unzip_and_rename(in_dir_p, frame_dir_p, offset_hours=3)
+            status = unzip_and_rename(in_dir_p, frame_dir_p)
             if (status == 1):
                 continue
         # Create video
@@ -193,6 +194,9 @@ def main(argv):
     # Set the size of the output video (for both width and height)
     img_size = 540
 
+    #Optionally choose to use forecast meteorology instead of reanalysis files
+    use_forecast = False
+
     # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
     bin_root = "/projects/aircocalc-www.createlab.org/pardumps/plumeviz/bin/" # Yen-Chia's example (DO NOT USE)
@@ -204,25 +208,25 @@ def main(argv):
         {
             "dispersion_source":DispersionSource(name='Irvin',lat=40.328015, lon=-79.903551, minHeight=0, maxHeight=50),
             "color": [250, 255, 99],
-            "filter_out": .8
+            "filter_out": .58
         },
         {
             "dispersion_source":DispersionSource(name='ET',lat=40.392967, lon=-79.855709, minHeight=0, maxHeight=50),
             "color": [99, 255, 206],
-            "filter_out": .8
+            "filter_out": .74
         },
         {
             "dispersion_source":DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
             "color": [206, 92, 247],
-            "filter_out": .8
+            "filter_out": .10
         },
         {
             "dispersion_source":DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50),
             "color": [255, 119, 0],
-            "filter_out": .8
+            "filter_out": .81
         }
         ]
-    date_list, redo = get_time_range_list(["2021-07-14"], duration=26, offset_hours=2), 9
+    date_list, redo = get_time_range_list(["2021-10-19","2021-10-20"], duration=26, offset_hours=2), 1
     #date_list, redo = get_start:_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
     #date_list, redo = get_start_end_time_list("2021-04-08", "2021-04-09", offset_hours=3), 5
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
@@ -257,7 +261,7 @@ def main(argv):
     # ...make sure you set the input argument "bin_url" of the run_hysplit function to None
     # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
     if argv[1] == "run_hysplit":
-        run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=bin_url)
+        run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=bin_url, use_forecast=use_forecast)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail
