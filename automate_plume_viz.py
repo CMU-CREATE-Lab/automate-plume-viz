@@ -150,9 +150,9 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
         et = "et=" + edt_str + "&"
         if add_smell:
             #TODO: create a more stable smell report layer
-            l = "l=bdrk_detailed,smell_my_city_pgh_reports_top2," + file_name[i] + "&"
+            l = "l=mb_labeled,smell_my_city_pgh_reports_top2," + file_name[i] + "&"
         else:
-            l = "l=bdrk_detailed," + file_name[i] + "&"
+            l = "l=mb_labeled," + file_name[i] + "&"
         share_url_ls.append(et_root_url + l + bt + et + et_part)
         dt_share_url_ls.append(date_str)
         # Add the thumbnail server url
