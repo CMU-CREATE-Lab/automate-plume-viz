@@ -92,7 +92,8 @@ def download_video_frames(bin_url, df_share_url, df_img_url, prefix="plume_"):
     date_has_hysplit = []
     for idx, row in df_share_url.iterrows():
         fname = prefix + row["date"] + ".bin"
-        print(fname)
+        print(bin_url + fname)
+        print(is_url_valid(bin_url + fname))
         if is_url_valid(bin_url + fname):
             date_has_hysplit.append(row["date"])
 
@@ -113,11 +114,9 @@ def create_all_videos(video_root):
             if (status == 1):
                 continue
         # Create video
-        video_file_p = video_root + dn + ".mp4"
+        video_file_p = video_root + dn[:8] + ".mp4" #trim just to YYYYMMDD
         if not os.path.isfile(video_file_p): # skip if the video exists
             create_video(frame_dir_p, video_file_p, font_p)
-        else:
-            print("Skip creating video since it exists...")
 
 
 def main(argv):
@@ -196,6 +195,8 @@ def main(argv):
 
     #Optionally choose to use forecast meteorology instead of reanalysis files
     use_forecast = False
+    
+    num_workers = 4
 
     # IMPORTANT: below is the setting for the main project, you should not use these parameters
     # TODO: add a config file for the parameters
@@ -219,15 +220,16 @@ def main(argv):
             "dispersion_source":DispersionSource(name='Clairton',lat=40.305062, lon=-79.876692, minHeight=0, maxHeight=50),
             "color": [206, 92, 247],
             "filter_out": .10
-        },
-        {
-            "dispersion_source":DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50),
-            "color": [255, 119, 0],
-            "filter_out": .81
         }
+#         {
+#             "dispersion_source":DispersionSource(name='Cheswick',lat=40.538261, lon=-79.790391, minHeight=0, maxHeight=50),
+#             "color": [255, 119, 0],
+#             "filter_out": .81
+#         }
         ]
-    date_list, redo = get_time_range_list(["2021-10-19","2021-10-20"], duration=26, offset_hours=2), 1
-    #date_list, redo = get_start:_end_time_list("2019-03-01", "2019-03-15", offset_hours=3), 1
+    date_list, redo = get_time_range_list(["2023-07-02","2023-06-07","2023-06-03","2023-01-31","2023-02-01"], duration=26, offset_hours=2), 3
+    #date_list, redo = get_time_range_list(["2023-07-02","2023-06-07"], duration=26, offset_hours=2), 5
+    #date_list, redo = get_start_end_time_list("2023-06-03","2023-06-04", duration=26, offset_hours=2), 1
     #date_list, redo = get_start_end_time_list("2021-04-08", "2021-04-09", offset_hours=3), 5
     #date_list, redo = get_start_end_time_list("2019-12-01", "2020-01-01", offset_hours=3), 2
     #date_list, redo = get_start_end_time_list("2021-04-05", "2021-04-06", offset_hours=3), 3
@@ -261,7 +263,7 @@ def main(argv):
     # ...make sure you set the input argument "bin_url" of the run_hysplit function to None
     # ...otherwise the code will not run because the particle files aleady exist in the remote URLs
     if argv[1] == "run_hysplit":
-        run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=bin_url, use_forecast=use_forecast)
+        run_hysplit(sources, bin_root, start_d, end_d, file_name, bin_url=bin_url, use_forecast=use_forecast, num_workers=num_workers)
 
     # Next, run the following to download videos
     # IMPORTANT: if you forgot to copy and paste the EarthTime layers, this step will fail

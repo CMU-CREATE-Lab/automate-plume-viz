@@ -268,6 +268,9 @@ class CachedDispersionRun:
                 self.log('Run directory: %s' % self.tmpPath())
                 self.log('Settings: %s' % self.settingsAsString())
                 raise
+        for fname in self.fNames:
+            if os.path.exists(fname + '.gz') and os.path.exists(fname):
+                os.remove(fname)
         self.assertComplete()
 
     def log(self, *args, include_stdout=True):
@@ -410,6 +413,18 @@ class CachedDispersionRun:
             name = dt.strftime('hysplit.%Y%m%d.%Hz.hrrra')
             fullPath = hrrrDir + '/' + name
             if not os.path.exists(fullPath):
+                if os.path.exists(fullPath + '.gz'):
+                    with gzip.open(fullPath + '.gz', 'rb') as f_in:
+                        tmpPath = f'{fullPath}_{os.getpid()}_{threading.get_ident()}.tmp'
+                        with open(tmpPath, 'wb') as f_out:
+                            try:
+                                self.log("Unzipping " + fullPath)
+                                shutil.copyfileobj(f_in, f_out)
+                            except EOFError:
+                                self.log("Unzip failed, redownloading " + fullPath)
+                                os.remove(fullPath + '.gz')
+                                os.remove(tmpPath)
+                        os.rename(tmpPath,fullPath)
                 if isReformat:
                     linkEnd = dt.strftime('%Y%m%d_%H-') + str(dt.hour + 5).zfill(2) + '_hrrr'
                     fileDownloaded = download_file('https://storage.googleapis.com/high-resolution-rapid-refresh/noaa_arl_formatted/' + linkEnd, fullPath)

@@ -197,6 +197,10 @@ def create_multisource_bin(fnames, o_file, numSources, cmaps, filter_out_ratios=
     
     print("Writing array to file %s" % o_file)
     points.tofile(o_file)
+    print("Zipping bin file %s" % o_file)
+    cmd = "pigz -9 %s" % (o_file)
+    subprocess_check(cmd)
+    print("Successfully zipped %s" % o_file)
 
 
 def read_particle_dat(particle_dat_filename, filter_out = .5, subsample=10 ):

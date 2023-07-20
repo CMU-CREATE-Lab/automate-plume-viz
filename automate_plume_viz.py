@@ -150,7 +150,7 @@ def generate_metadata(start_d, end_d, video_start_delay_hrs=0, url_partition=4, 
         et = "et=" + edt_str + "&"
         if add_smell:
             #TODO: create a more stable smell report layer
-            l = "l=mb_labeled,smell_my_city_pgh_reports_top2," + file_name[i] + "&"
+            l = "l=mb_labeled,smell_my_city_pgh_reports_top4," + file_name[i] + "&"
         else:
             l = "l=mb_labeled," + file_name[i] + "&"
         share_url_ls.append(et_root_url + l + bt + et + et_part)
@@ -248,7 +248,10 @@ def simulate(start_time_eastern, o_file, sources, emit_time_hrs=1, duration=24, 
     print("Creating %s" % o_file)
     create_multisource_bin(traj_file_list, o_file, len(sources), cmaps, filter_out_ratios=filter_out_ratios)
     print("Created %s" % o_file)
-    os.chmod(o_file, 0o777)
+    if os.path.isfile(o_file):
+        os.chmod(o_file, 0o777)
+    elif os.path.isfile(o_file + ".gz"):
+        os.chmod(o_file + ".gz", 0o777)
 
     # Cleanup files
     # print("Cleaning files...")
@@ -359,7 +362,7 @@ def urlretrieve_worker(url, file_p):
     try:
         print("\t{Request} %s\n" % url)
         urllib.request.urlretrieve(url, file_p)
-        if os.path.getsize(file_p) < 200000:
+        if os.path.getsize(file_p) < 1000000:
              raise Exception('Thumbnail server returned too few frames for %s. Did you \
 add a layer definition to the Earthtime spreadsheet?' % file_p)
         os.chmod(file_p, 0o777)
@@ -435,7 +438,9 @@ def unzip_and_rename(in_dir_p, out_dir_p):
                     if "frame" in fn and ".png" in fn:
                         num_files_per_partition += 1
             # Loop and rename the files
-            assert(num_files_per_partition - 1 > 0),"Number of files per partition needs to be more than 1"
+            if not num_files_per_partition - 1 > 0:
+                print("Number of video frames per partition needs to be more than 1. Skipping this day...")
+                return 1
             time_span_frame = pd.Timedelta(time_span/(num_files_per_partition - 1), unit="h")
             for fn in fn_list:
                 frame_number = int(re.findall(r"\d{6}", fn)[0]) - 1
